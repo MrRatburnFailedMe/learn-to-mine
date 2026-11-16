@@ -7203,7 +7203,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '2350115253b0cc773f3f1ecd' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'f056e6ade63ab88a3192791a' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }
@@ -7242,29 +7242,25 @@ function fbClose(){
 }
 function fbReset(){ FB.opts.clear(); for (const s of $('fb-opts').children) s.classList.remove('on'); $('fb-note').value = ''; }
 function fbQueue(){ try { return JSON.parse(localStorage.getItem('gr_feedback_queue') || '[]'); } catch (e){ return []; } }
-async function fbPost(n){ const r = await fetch(FB.url + '/feedback', { method: 'POST', body: JSON.stringify({ ...n, token: FB.token }) }); if (!r.ok) throw new Error('status ' + r.status); return r.json(); }
+const FB_MODE = (() => {
+  if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return 'local';
+  try { const q = new URLSearchParams(location.search), k = q.get('owner'); if (k){ localStorage.setItem('gr_owner', k); q.delete('owner'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); } } catch (e){}
+  let k = null; try { k = localStorage.getItem('gr_owner'); } catch (e){}
+  return /\.vercel\.app$/.test(location.hostname) && k ? 'owner' : 'off';
+})();
+async function fbPost(n){ const r = FB_MODE === 'owner' ? await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...n, key: localStorage.getItem('gr_owner') }) }) : await fetch(FB.url + '/feedback', { method: 'POST', body: JSON.stringify({ ...n, token: FB.token }) }); if (!r.ok) throw new Error('status ' + r.status); return r.json(); }
 // anything that couldn't be sent waits in this browser and goes the next time a note gets through
 async function fbFlush(){ let q = fbQueue(); while (q.length){ try { await fbPost(q[0]); } catch (e){ return; } q.shift(); try { localStorage.setItem('gr_feedback_queue', JSON.stringify(q)); } catch (e){ return; } } }
-const FB_LOCAL = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
-function fbIssue(n){
-  const line = q => `- **${q.level ? q.level.place : '?'}**${q.options && q.options.length ? ' (' + q.options.join(', ') + ')' : ''}: ${q.note || ''}\n  at ${q.player ? q.player.pos.join(', ') + ' facing ' + q.player.yaw + ' / ' + q.player.pitch : '?'}${q.cart ? ', cart ' + q.cart.piece + ' @ ' + q.cart.s : ''}`;
-  const old = fbQueue(); try { localStorage.removeItem('gr_feedback_queue'); } catch (e){}
-  const body = `${n.note || '(no words)'}\n\n${line(n)}\n\n(paste the screenshot here: it's on your clipboard)\n\nmode: ${DEMO ? 'demo' : 'full game'} · ${n.version || ''} · ${n.created || ''}` + (old.length ? `\n\n**Earlier notes that didn't send:**\n${old.map(line).join('\n')}` : '');
-  const title = (n.note || n.options.join(', ') || 'Feedback').slice(0, 80);
-  try { if (n.screenshot && window.ClipboardItem) navigator.clipboard.write([new ClipboardItem({ 'image/png': fetch(n.screenshot).then(r => r.blob()).then(b => createImageBitmap(b)).then(bm => { const c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0); return new Promise(res => c.toBlob(res, 'image/png')); }) })]).catch(() => {}); } catch (e){}
-  window.open(`https://github.com/MrRatburnFailedMe/learn-to-mine/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`, '_blank');
-  toast('Opened GitHub: press <b>Create</b> there (and paste the screenshot if you like).');
-}
 async function fbSend(){
   const note = $('fb-note').value.trim();
   if (!note && !FB.opts.size){ $('fb-note').placeholder = 'Pick an option or write a word first'; SFX.nope(); return; }
   const n = { ...FB.ctx, options: [...FB.opts], note, screenshot: FB.shot };
-  if (!FB_LOCAL){ fbReset(); fbClose(); SFX.click(); fbIssue(n); return; }
   fbReset(); fbClose(); SFX.click();
   try { const r = await fbPost(n); toast(`Thanks! Feedback <b>${r.id}</b> sent.`); fbFlush(); }
   catch (e){ const q = fbQueue(); q.push(n); while (q.length > 20) q.shift(); try { localStorage.setItem('gr_feedback_queue', JSON.stringify(q)); toast('Feedback saved. It will send once the feedback server is running.'); } catch (e2){ toast('Feedback could not be saved.'); } }
 }
-if (FB_LOCAL) setTimeout(fbFlush, 4000);
+if (FB_MODE !== 'off') setTimeout(fbFlush, 4000);
+if (FB_MODE === 'off') $('help').innerHTML = $('help').innerHTML.replace(/ · <b>N<\/b> feedback/, '');
 // ============================================================ THE DEMO
 var DEMO = false;
 const DEMO_TASKS = [['ore', 'Swing your pick at an ore glint'], ['munch', "Feed Ol' Munch some ore"], ['boom', 'Throw a stick of dynamite'], ['ride', 'Ride the mine cart through the caves'], ['cave', 'Find a cave (or dig into a crevice)']];
@@ -7427,7 +7423,7 @@ $('m-tp-hill').onclick = () => teleport('hill');
 $('m-tp-peak').onclick = () => teleport('peak');
 addEventListener('keydown', e => {
   if (fbOpen){ if (e.code === 'Escape'){ e.preventDefault(); fbClose(); } else if (e.code === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); fbSend(); } return; }
-  if (e.code === 'KeyN' && started && !modOpen && !menuOpen && !state.transit){ FB.want = true; setTimeout(() => { if (FB.want){ FB.want = false; FB.shot = null; fbShow(); } }, 400); return; }
+  if (e.code === 'KeyN' && FB_MODE !== 'off' && started && !modOpen && !menuOpen && !state.transit){ FB.want = true; setTimeout(() => { if (FB.want){ FB.want = false; FB.shot = null; fbShow(); } }, 400); return; }
   if (e.code === 'KeyX' && started && !menuOpen && !DEMO){ setMod(!modOpen); return; }
   if (modOpen || !started || menuOpen) return;
   keys[e.code] = true;

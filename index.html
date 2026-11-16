@@ -5963,11 +5963,17 @@ function planCaves(rng){
 // with a mine cart on a loop of track. (a = along the shaft past the room, b = to the right, y = up from the room floor)
 function demoAt(a, b, y){ return new V3(KN.room.x + KN.f.x * a - KN.f.z * b, DEEP.FLOOR + y, KN.room.z + KN.f.z * a + KN.f.x * b); }
 function planDemo(rng){
-  // the ground's only 5-6 m over the room, so the shaft keeps level and stays clear of the dip towards the river
-  const way = [[6.5, 4.5], [9, 7.5], [10, 11.5], [8, 15.5], [3.5, 17], [-.5, 14.5], [0, 10.5], [3, 7.5]];
-  const curve = new THREE.CatmullRomCurve3(way.map(([a, b]) => demoAt(a, b, 0)), true, 'centripetal'), L = curve.getLength(), n = Math.round(L / .25), P = curve.getSpacedPoints(n);
-  DEEP.rail = { P, L, n, on: false, s: 0, v: 0 };
-  return [{ kind: 'rail', shape: 'tube', pts: P.filter((p, i) => i % 6 === 0).concat([P[0]]).map(p => p.clone().add(new V3(0, 1.4, 0))), r: 2.1, rad: 2.3, rail: true }];
+  // a one-way line, like a little piece of the real railway: out of the room, round the bends and down into the rock,
+  // over a hill, down a steep drop, across a cavern on a trestle, and on down to the buffers. (the ground's only 5-6 m over the room,
+  // so it heads downhill straight away)
+  const way = [[6.5, 4.5, 0], [9, 7.5, 0], [10.5, 11.5, -.6], [9, 15.5, -1.8], [5, 17.5, -2.6], [.5, 16.5, -2.1], [-2.5, 13, -3], [-3, 9, -5.2], [-2, 5, -6.6],
+    [-6, 2, -7.6], [-9.5, -2, -8.4], [-11, -7, -8.8], [-8, -11.5, -9.6], [-3, -12, -11.2], [1, -9, -12], [3, -5, -12.3]];
+  const curve = new THREE.CatmullRomCurve3(way.map(([a, b, y]) => demoAt(a, b, y)), false, 'centripetal'), L = curve.getLength(), n = Math.round(L / .25), P = curve.getSpacedPoints(n);
+  DEEP.rail = { P, L, n, on: false, s: 0, v: 0, cs: 0 };
+  const T = P[n].clone().sub(P[n - 4]).normalize(), tube = P.filter((p, i) => i % 6 === 0 || i === n).concat([P[n].clone().addScaledVector(T, 1.6)]).map(p => p.clone().add(new V3(0, 1.4, 0)));
+  return [{ kind: 'rail', shape: 'tube', pts: tube, r: 2.1, rad: 2.3, rail: true },
+    // the cavern the trestle crosses
+    { kind: 'cavern', shape: 'blob', c: demoAt(-9.5, -3, -9.4), r: [6, 4.6, 5.5], flatY: DEEP.FLOOR - 9.4 - 4.6 * .55 }];
 }
 // distance (in metres, negative inside) from a point to a cave
 function featSD(f, x, y, z){
@@ -6065,6 +6071,9 @@ function buildDeep(){
     lockNear(new V3(R0.x + 2, 0, R0.z - 1.8), 1.6, D.FLOOR - 2.4, D.FLOOR + 1);
     // the floor of the room and of the way down can't be dug: you dig sideways out of them
     lockNear(D.RC, 6.9, D.FLOOR - 3, D.FLOOR + .3);
+    // the rock skin under the ground stays undiggable right round the way in too (only the carved tunnel and room are open)
+    for (let j = 1; j < D.NY; j++){ const y = D.y0 + j * S; if (y < D.FLOOR - 1) continue; for (let k = 1; k < D.NZ; k++) for (let i = 1; i < D.NX; i++){ const o = dIdx(i, j, k); if (D.lock[o] || D.F[o] <= 0) continue; const x = D.x0 + i * S, z = D.z0 + k * S, th = D.TH[k * D.PX + i];
+      if (y > th - (Math.hypot(x - D.RC.x, z - D.RC.z) < 8.5 ? 1.6 : 3)) D.lock[o] = 1; } }
     for (let j = 1; j < D.NY; j++) for (let k = 1; k < D.NZ; k++) for (let i = 1; i < D.NX; i++){ const x = D.x0 + i * S, z = D.z0 + k * S, a = shaftAt(x, z); if (a.s < -1 || a.s > KN.len || Math.abs(a.lat) > 2) continue;
       const y = D.y0 + j * S, fy = shaftFloor(a.s), o = dIdx(i, j, k); if (y > fy - 3 && y < fy + .25 && D.F[o] > 0) D.lock[o] = 1; }
     if (D.rail) for (let i = 0; i < D.rail.n; i += 3){ const p = D.rail.P[i]; lockNear(p, 1.25, p.y - 1.8, p.y - .2); } }
@@ -6192,7 +6201,7 @@ function meshChunk(n){
       // no bare rock at the way in: the timber decline lines that whole stretch
       if (q.s < (KN.roofEnd || -9) + .3 && Math.abs(q.lat) < 3.5 && cy > shaftFloor(q.s) - 1) return;
       // under the plank floor that runs on down to the room, the bare rock floor isn't drawn (it would poke through or show cracks)
-      if (q.s < KN.flat + KN.run - .3 && Math.abs(q.lat) < 1 && cy < shaftFloor(q.s) + .3) return; }
+      if (q.s < KN.flat + KN.run - .3 && Math.abs(q.lat) < 1 && cy < shaftFloor(q.s) + .3 && cy > shaftFloor(q.s) - 2.5) return; }
     const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
     if ((uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz < 0){ const t = b; b = c; c = t; }
     pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
@@ -6676,8 +6685,8 @@ function dressDeep(rng){
 // trestles over the drops, lanterns, and Munch's cart waiting in his room
 function buildRail(rng){
   const D = DEEP, R = D.rail, g = D.deco, P = R.P, n = R.n, rails = [], ties = [], wood = [];
-  R.T = []; for (let i = 0; i < n; i++) R.T.push(P[(i + 1) % n].clone().sub(P[(i + n - 1) % n]).normalize());
-  const side = i => new V3(-R.T[i % n].z, 0, R.T[i % n].x).normalize();
+  R.T = []; for (let i = 0; i <= n; i++) R.T.push(P[Math.min(n, i + 1)].clone().sub(P[Math.max(0, i - 1)]).normalize());
+  const side = i => new V3(-R.T[Math.min(i, n)].z, 0, R.T[Math.min(i, n)].x).normalize();
   const beam = (arr, a, b, w, h) => { const geo = new THREE.BoxGeometry(w, h, a.distanceTo(b)); geo.applyMatrix4(new THREE.Matrix4().lookAt(a, b, UP0).setPosition(a.clone().lerp(b, .5))); arr.push(geo); };
   const post = (arr, x, y0, y1, z, w = .16) => { const geo = new THREE.BoxGeometry(w, y1 - y0, w); geo.translate(x, (y0 + y1) / 2, z); arr.push(geo); };
   for (let i = 0; i < n; i += 2){ const j = Math.min(i + 2, n); for (const sg of [-.55, .55]) beam(rails, P[i].clone().addScaledVector(side(i), sg).setY(P[i].y + .05), P[j].clone().addScaledVector(side(j), sg).setY(P[j].y + .05), .07, .1); }
@@ -6694,6 +6703,13 @@ function buildRail(rng){
   }
   for (const [arr, mat] of [[rails, METAL], [ties, WOOD_D], [wood, WOOD_D]]) if (arr.length){ const m = new THREE.Mesh(mergeGeometries(arr), mat); m.receiveShadow = true; g.add(m); }
   for (let i = 30; i < n - 20; i += 44){ const p = P[i].clone().addScaledVector(side(i), 1.15).setY(P[i].y + 2.35), l = modelLantern(true); l.scale.setScalar(1.1); l.position.copy(p); g.add(l); deepLampAt(p.clone().setY(p.y - .2), 0xffb060, 4, 11, 1); }
+  for (const f of D.feats) if (f.kind === 'cavern') deepLampAt(f.c.clone().add(new V3(0, 1.5, 0)), 0xffb060, 5, 16, 1);
+  // buffers at the end of the line
+  { const sd = side(n), e = P[n].clone().addScaledVector(R.T[n], 1.1), sg = new THREE.Group(); sg.position.copy(e); sg.rotation.y = Math.atan2(-R.T[n].x, -R.T[n].z); g.add(sg); void sd;
+    for (const x of [-.75, .75]){ mk(new THREE.BoxGeometry(.2, 1.1, .2), WOOD_D, sg, x, .5, 0); mk(new THREE.CylinderGeometry(.13, .13, .3, 8), METAL, sg, x * .7, .55, .22).rotation.x = Math.PI / 2; }
+    mk(new THREE.BoxGeometry(1.9, .3, .26), WOOD, sg, 0, .62, .06);
+    mk(new THREE.BoxGeometry(1.5, .45, .06), [WOOD_D, WOOD_D, WOOD_D, WOOD_D, new THREE.MeshLambertMaterial({ map: signTex(400, 110, [{ t: 'END OF THE LINE', size: 34 }], 2) }), WOOD_D], sg, 0, 1.45, .12);
+    mk(new THREE.BoxGeometry(.12, 1.2, .12), WOOD_D, sg, 0, .9, .02); }
   // the cart, and a sign by it
   R.cart = modelCart(); R.cart.traverse(o => { if (o.isMesh) o.castShadow = false; }); g.add(R.cart); railPlace(0);
   const hit = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.3, 1.8), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = .65; R.cart.add(hit);
@@ -6705,8 +6721,11 @@ function buildRail(rng){
 const _rp = new V3(), _rt = new V3();
 // where the cart is at s metres round the loop (and which way it's heading)
 function railPose(s, out, tan){
-  const R = DEEP.rail, f = (((s % R.L) + R.L) % R.L) / R.L * R.n, i = Math.min(R.n - 1, Math.floor(f)), u = f - i;
-  out.copy(R.P[i]).lerp(R.P[i + 1], u); if (tan) tan.copy(R.T[i]).lerp(R.T[(i + 1) % R.n], u).normalize(); return out;
+  const R = DEEP.rail;
+  // before the start of the line, carry straight on back from it
+  if (s < 0){ out.copy(R.P[0]).addScaledVector(R.T[0], s); if (tan) tan.copy(R.T[0]); return out; }
+  const f = Math.min(s, R.L) / R.L * R.n, i = Math.min(R.n - 1, Math.floor(f)), u = f - i;
+  out.copy(R.P[i]).lerp(R.P[i + 1], u); if (tan) tan.copy(R.T[i]).lerp(R.T[i + 1], u).normalize(); return out;
 }
 function railPlace(s){ const R = DEEP.rail; railPose(s, _rp, _rt); R.cart.position.copy(_rp); R.cart.lookAt(_rp.clone().sub(_rt)); }
 function railBoard(){
@@ -6717,7 +6736,7 @@ function railBoard(){
 }
 // you hop out beside the cart wherever you've stopped it
 function railOff(){
-  const R = DEEP.rail; R.on = false; R.cs = ((R.s % R.L) + R.L) % R.L; R.v = 0; railPlace(R.cs);
+  const R = DEEP.rail; R.on = false; R.cs = clamp(R.s, 0, R.L); R.v = 0; railPlace(R.cs);
   // you step out onto the track just behind the cart (the railway always runs through open space)
   const t = railPose(R.cs, new V3(), _rt) && _rt.clone(), p = railPose(R.cs - 1.6, new V3());
   player.pos.set(p.x, p.y + .05, p.z);
@@ -6734,6 +6753,11 @@ function updateRail(dt){
   R.v = clamp(R.v - t.y * 9.8 * dt, -3, 9);
   if (Math.abs(R.v) > 1 && throttle('railclack', 2600 / Math.abs(R.v))) noiseHit && noiseHit({ type: 'bandpass', f: 900, q: 3, dur: .04, g: .04 });
   R.s += R.v * dt;
+  // buffers at both ends: at the far end it's the end of the ride, and you're back in Munch's room with the cart
+  if (R.s < 0){ R.s = 0; R.v = Math.max(0, R.v); }
+  if (R.s > R.L - .2 && !R.ending){ R.s = R.L - .2; R.ending = true; SFX.thunk && SFX.thunk(); toast('End of the line!');
+    setTimeout(() => transition(() => { R.s = 0; railOff(); R.cs = 0; railPlace(0); R.ending = false; }), 700); }
+  if (R.ending){ R.s = R.L - .2; R.v = 0; }
   railPlace(R.s);
   player.pos.copy(p); player.vel.set(0, 0, 0);
   const sh = Math.abs(R.v) / 9 * .015, yaw = Math.atan2(-t.x, -t.z) + clamp(player.yaw - R.yaw0, -1.9, 1.9), pitch = clamp(Math.asin(clamp(t.y, -1, 1)) * .8 + player.pitch, -1.4, 1.4);
@@ -6796,6 +6820,7 @@ const deepMouth = (() => {
   const g = new THREE.Group(), rock = M(0x8c877e), rock2 = M(0x77726a);
   for (const s of [-1, 1]){ mk(new THREE.BoxGeometry(.3, 3.4, .32), WOOD_D, g, s * 1.62, 1.6, 1.45).castShadow = true; mk(new THREE.BoxGeometry(.24, .24, 1.1), WOOD_D, g, s * 1.62, 3.1, .9); }
   mk(new THREE.BoxGeometry(3.7, .32, .34), WOOD_D, g, 0, 3.2, 1.45).castShadow = true;
+  mk(new THREE.BoxGeometry(3.3, .46, .5), WOOD_D, g, 0, 2.98, 1.12);
   for (const s of [-1, 1]){ const b = mk(new THREE.BoxGeometry(.9, .18, .18), WOOD_D, g, s * 1.2, 2.85, 1.47); b.rotation.z = s * .75; }
   const tex = signTex(420, 110, [{ t: "MUNCH'S MINE", size: 36 }], 2);
   const sg = new THREE.Mesh(new THREE.BoxGeometry(2.4, .55, .06), [WOOD_D, WOOD_D, WOOD_D, WOOD_D, new THREE.MeshLambertMaterial({ map: tex }), WOOD_D]); sg.position.set(0, 3.7, 1.5); g.add(sg);
@@ -7203,7 +7228,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'f056e6ade63ab88a3192791a' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'b5b5de221db79ec1fa00f1b1' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

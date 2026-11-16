@@ -7,7 +7,7 @@
 <title>Learn to Mine</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rye&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#ffcf4a;--ink:#2b1d12;--paper:#f1e0bd;--red:#c8442f}
 *{box-sizing:border-box}
@@ -15,8 +15,8 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:Nunito,system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
 canvas{display:block}
 .hud{position:fixed;pointer-events:none;z-index:5}
-#money{top:14px;left:18px;font-family:Rye,serif;font-size:32px;color:var(--gold);text-shadow:0 3px 0 #0009,0 0 14px #0007}
-#loc{top:16px;left:50%;transform:translateX(-50%);font-family:Rye,serif;font-size:17px;background:#0008;padding:6px 18px;border-radius:20px;white-space:nowrap}
+#money{top:14px;left:18px;font-family:'Lilita One',Nunito,sans-serif;font-size:32px;color:var(--gold);text-shadow:0 3px 0 #0009,0 0 14px #0007}
+#loc{top:16px;left:50%;transform:translateX(-50%);font-family:'Lilita One',Nunito,sans-serif;font-size:17px;background:#0008;padding:6px 18px;border-radius:20px;white-space:nowrap}
 #cross{left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #0007}
 #prompt{left:50%;top:calc(50% + 30px);transform:translateX(-50%);background:#000b;padding:7px 14px;border-radius:10px;font-weight:800;font-size:16px;white-space:nowrap;display:none}
 #prompt b{color:var(--gold)}
@@ -50,7 +50,7 @@ canvas{display:block}
 @keyframes tin{from{transform:translateX(30px);opacity:0}}
 #fade{inset:0;background:#000;opacity:0;transition:opacity .35s;z-index:8}
 #uw{inset:0;opacity:0;transition:opacity .25s;z-index:4;background:linear-gradient(180deg,#7fd0ff22,transparent 30%),radial-gradient(ellipse at 50% 20%,#3aa0d844,#0b3d6abb 80%)}
-.float{position:fixed;transform:translate(-50%,-50%);font-family:Rye,serif;font-size:28px;color:var(--gold);text-shadow:0 3px 0 #000,0 0 10px #0008;pointer-events:none;z-index:6;white-space:nowrap}
+.float{position:fixed;transform:translate(-50%,-50%);font-family:'Lilita One',Nunito,sans-serif;font-size:28px;color:var(--gold);text-shadow:0 3px 0 #000,0 0 10px #0008;pointer-events:none;z-index:6;white-space:nowrap}
 .float.grey{color:#ddd;font-size:20px}
 .bubble{position:fixed;transform:translate(-50%,-100%);background:#fff8e6;color:var(--ink);font-weight:900;padding:7px 12px;border-radius:12px;pointer-events:none;z-index:6;white-space:nowrap;font-size:15px;box-shadow:0 3px 0 #0005}
 .bubble:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0;border-top-color:#fff8e6}
@@ -59,7 +59,7 @@ canvas{display:block}
 #gas{inset:0;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(ellipse at center,#e8d84a22,#c8b02088)}
 #rh-top{position:absolute;top:56px;left:50%;transform:translateX(-50%);display:flex;gap:10px;font-weight:900}
 #rh-top span{background:#000a;padding:5px 12px;border-radius:10px;white-space:nowrap}
-#rh-top b{color:var(--gold);font-family:Rye,serif;font-weight:400}
+#rh-top b{color:var(--gold);font-family:'Lilita One',Nunito,sans-serif;font-weight:400}
 #rh-branch{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);display:flex;gap:10px;transition:opacity .3s}
 #rh-branch div{background:#000b;border:2px solid #fff3;border-radius:12px;padding:7px 12px;min-width:130px;text-align:center;font-weight:900;font-size:14px}
 #rh-branch div small{display:block;font-size:11px;opacity:.65;font-weight:800}
@@ -80,13 +80,13 @@ canvas{display:block}
 #title .card{margin-right:auto;margin-left:6vw}
 .card{background:var(--paper);color:var(--ink);border-radius:18px;padding:26px 30px;max-width:520px;width:calc(100% - 32px);box-shadow:0 10px 0 #5a3b1f,0 20px 60px #000a;border:3px solid #6b4423;text-align:center;max-height:calc(100vh - 32px);overflow:auto}
 .card.wide{max-width:680px}
-.card h1{font-family:Rye,serif;font-size:44px;margin:0;line-height:1;color:#8a2f1d;text-shadow:0 3px 0 #e5c48a}
-.card h2{font-family:Rye,serif;margin:0 0 14px;color:#8a2f1d}
-.card .sub{font-family:Rye,serif;margin:6px 0 14px;font-size:18px;color:#6b4423}
+.card h1{font-family:'Lilita One',Nunito,sans-serif;font-size:44px;margin:0;line-height:1;color:#8a2f1d;text-shadow:0 3px 0 #e5c48a}
+.card h2{font-family:'Lilita One',Nunito,sans-serif;margin:0 0 14px;color:#8a2f1d}
+.card .sub{font-family:'Lilita One',Nunito,sans-serif;margin:6px 0 14px;font-size:18px;color:#6b4423}
 .card p{font-weight:700;margin:8px 0}
 .card .tiny{font-size:12px;opacity:.7;margin-top:14px}
 .menu{display:flex;flex-direction:column;gap:10px;margin:18px auto 4px;max-width:330px}
-.card button{font-family:Rye,serif;font-size:22px;background:#c8442f;color:#fff8e6;border:0;border-radius:12px;padding:12px 26px;cursor:pointer;box-shadow:0 5px 0 #7a2416;margin-top:8px}
+.card button{font-family:'Lilita One',Nunito,sans-serif;font-size:22px;background:#c8442f;color:#fff8e6;border:0;border-radius:12px;padding:12px 26px;cursor:pointer;box-shadow:0 5px 0 #7a2416;margin-top:8px}
 .menu button{margin:0;width:100%}
 .card button small{display:block;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;opacity:.85;margin-top:2px}
 .card button.alt{background:#7b5530;box-shadow:0 5px 0 #4a3018}
@@ -150,11 +150,9 @@ canvas{display:block}
 <div id="title" class="overlay">
   <div class="card" id="c-main">
     <h1>Learn<br>to Mine</h1>
-    <div class="sub">grab your pals · grab a pick</div>
-    <p>Dig out from Munch's Mine. Every swing bites the rock, and past it are waterfalls, old mineshafts and caves nobody's seen. Feed the ore to Ol' Munch, ride the endless mine carts, and don't wake the bear.</p>
     <div class="menu">
       <button id="b-new">New Game</button>
-      <button id="b-demo" class="demo">Play the Demo<small>a quick taste: mine, feed Munch, ride the cart</small></button>
+      <button id="b-demo" class="demo">Play the Demo</button>
       <button id="b-load" class="alt">Load Game<small id="load-info">No saved claim yet</small></button>
       <button id="b-settings" class="alt">Settings</button>
       <button id="b-char" class="alt">Change Character Looks</button>
@@ -262,7 +260,7 @@ function vnoise(x, z){
 }
 const fbm = (x, z) => vnoise(x, z) * .5 + vnoise(x * 2.03 + 5.2, z * 2.03 + 1.3) * .3 + vnoise(x * 4.1 + 2.7, z * 4.1 + 8.1) * .2;
 
-await Promise.race([document.fonts.load('48px Rye'), new Promise(r => setTimeout(r, 2500))]).catch(() => {});
+await Promise.race([document.fonts.load('48px "Lilita One"'), new Promise(r => setTimeout(r, 2500))]).catch(() => {});
 
 function hash3(x, y, z){ const h = Math.sin(x * 127.1 + y * 269.5 + z * 311.7) * 43758.5453123; return h - Math.floor(h); }
 function vn3(x, y, z){
@@ -378,7 +376,7 @@ function signTex0(w, h, lines, rows = 3){
     g.textAlign = 'center'; g.textBaseline = 'middle';
     let y = h / 2 - (lines.length - 1) * lines.reduce((s, l) => s + l.size, 0) / lines.length * .58;
     for (const l of lines){
-      g.font = `${l.size}px ${l.font || 'Rye'}, serif`;
+      g.font = `${l.size}px ${l.font || '"Lilita One"'}, serif`;
       g.fillStyle = '#f3dfb2'; g.fillText(l.t, w / 2 + 2, y + 2);
       g.fillStyle = l.color || '#3a1f0e'; g.fillText(l.t, w / 2, y);
       y += l.size * 1.16;
@@ -1179,7 +1177,7 @@ function tagTex(item, owned){
   return canvasTex(256, 80, (g, w, h) => {
     g.fillStyle = owned ? '#d9cfb8' : '#f3e3c3'; g.fillRect(0, 0, w, h); g.strokeStyle = '#5a3b1f'; g.lineWidth = 6; g.strokeRect(3, 3, w - 6, h - 6);
     g.textAlign = 'center'; g.fillStyle = '#3a1f0e'; g.font = '800 26px Nunito'; g.fillText(item.name, w / 2, 34);
-    g.font = '26px Rye'; g.fillStyle = owned ? '#2f7a3a' : '#a3301f'; g.fillText(owned ? 'OWNED' : '$' + item.price, w / 2, 66);
+    g.font = '26px "Lilita One"'; g.fillStyle = owned ? '#2f7a3a' : '#a3301f'; g.fillText(owned ? 'OWNED' : '$' + item.price, w / 2, 66);
   });
 }
 const board = (() => {
@@ -2068,6 +2066,7 @@ function collideWorld(zone, p, r, cb, isPlayer = false){
     for (const b of surfBoxes){ if (!b.on) continue; if (Math.abs(p.x - b.x) > b.rad + r || Math.abs(p.z - b.z) > b.rad + r) continue; const n = pushOBB(p, r, b); if (n && cb) cb(n); }
     const rr = Math.hypot(p.x * .95, p.z), lim = isPlayer ? 46 : 52, free = isPlayer && state.fly;
     if (rr > lim && rr < 200 && !free){ const k = lim / rr; p.x *= k; p.z *= k; if (cb) cb(tmpN.set(-p.x, 0, -p.z).normalize()); }
+    if (DEMO && isPlayer && !free && state.zone === 0 && p.y > terrainH(p.x, p.z) - 3){ const dx = p.x + 6, dz = p.z - 5, d = Math.hypot(dx, dz); if (d > 21){ p.x = -6 + dx * 21 / d; p.z = 5 + dz * 21 / d; if (cb) cb(tmpN.set(-dx, 0, -dz).normalize()); if (throttle('demoedge', 6000)) toast("That's as far as the demo goes. Munch's Mine is the place to be!"); } }
     const tdx = p.x - TOWN.x, tdz = p.z - TOWN.z, tr = Math.hypot(tdx, tdz), tl = isPlayer ? 60 : 64;
     if (tr > tl && tr < 220 && !free){ const k = tl / tr; p.x = TOWN.x + tdx * k; p.z = TOWN.z + tdz * k; if (cb) cb(tmpN.set(-tdx, 0, -tdz).normalize()); }
     const fdx = p.x - FOREST.x, fdz = p.z - FOREST.z, frr = Math.hypot(fdx, fdz), fl = isPlayer ? 56 : 60;
@@ -3359,6 +3358,7 @@ function carryOnCart(){
 }
 // ---- driving
 function startDrive(){
+  if (DEMO){ SFX.nope(); toast('The railway out of camp is in the full game.'); return; }
   if (state.riding || cart.off) return;
   state.riding = true; state.swing = null; state.pan = null; player.vel.set(0, 0, 0);
   ride.look.yaw = 0; ride.look.pitch = -.08;
@@ -4067,7 +4067,7 @@ const sheriff = building({ x: 415, z: fS, rot: SOUTH, w: 10, d: 10, h: 4.8, fh: 
   hitBox(b, 2.8, 1.6, cz0, 1.3, 3, .3, { prompt: () => `<b>[E]</b> ${jail.open ? 'Shut' : 'Open'} the cell`, use: () => { jail.open = !jail.open; doorBox.on = !jail.open; SFX.gate(); SFX.chains(); } });
   const posters = [['OL\' MUNCH', '$5'], ['BLACK BART', '$800'], ['YOU?', '$1']];
   posters.forEach(([n, r], i) => {
-    const tex = canvasTex(160, 220, (g, w, h) => { g.fillStyle = '#e8d8a8'; g.fillRect(0, 0, w, h); g.fillStyle = '#3a1f0e'; g.textAlign = 'center'; g.font = '30px Rye'; g.fillText('WANTED', w / 2, 38); g.fillStyle = '#7a6a4a'; g.fillRect(36, 52, 88, 80); g.fillStyle = '#3a1f0e'; g.font = '20px Rye'; g.fillText(n, w / 2, 160); g.font = '24px Rye'; g.fillText(r, w / 2, 198); });
+    const tex = canvasTex(160, 220, (g, w, h) => { g.fillStyle = '#e8d8a8'; g.fillRect(0, 0, w, h); g.fillStyle = '#3a1f0e'; g.textAlign = 'center'; g.font = '30px "Lilita One"'; g.fillText('WANTED', w / 2, 38); g.fillStyle = '#7a6a4a'; g.fillRect(36, 52, 88, 80); g.fillStyle = '#3a1f0e'; g.font = '20px "Lilita One"'; g.fillText(n, w / 2, 160); g.font = '24px "Lilita One"'; g.fillText(r, w / 2, 198); });
     const m = new THREE.Mesh(new THREE.PlaneGeometry(.55, .75), new THREE.MeshLambertMaterial({ map: tex })); m.position.set(-4.5 + i * .7, 2.2, .14); b.g.add(m);
   });
   hangLamp(b, -2.5, 3.5); rug(b, -2.5, 3.8, 2.6, 2, '#5a3a20');
@@ -5636,6 +5636,7 @@ function outcrop(x, z, r, types, o = {}){
   TOWN.well = { g, crank, x: wx, z: wz };
 }
 function wellDown(){
+  if (DEMO){ SFX.nope(); toast('The well is in the full game.'); return; }
   if (state.carrying){ toast('Your hands are full.'); SFX.nope(); return; }
   SFX.rope && SFX.rope();
   transition(() => {
@@ -5958,25 +5959,15 @@ function planCaves(rng){
   }
   return list;
 }
-// ---------------------------------------------------------------- the demo's mine: everything packed in close around Munch's room, joined up by a little railway you can ride
-// (a = along the shaft past the room, b = to the side, y = up from the room floor)
+// ---------------------------------------------------------------- the demo's mine: Munch's room opens into one big cave with a little railway round it,
+// and all the rock around is packed with ore. (a = along the shaft past the room, b = to the side, y = up from the room floor)
 function demoAt(a, b, y){ return new V3(KN.room.x + KN.f.x * a - KN.f.z * b, DEEP.FLOOR + y, KN.room.z + KN.f.z * a + KN.f.x * b); }
 function planDemo(rng){
-  const list = [], put = (kind, a, b, y, r) => { const c = demoAt(a, b, y), th = terrainH(c.x, c.z); if (c.y + r[1] > th - 5) c.y = th - 5 - r[1]; const f = { kind, shape: 'blob', c, r, rad: Math.max(...r), ...CAVE_KINDS[kind] }; list.push(f); return f; };
-  const fl = f => f.c.y - f.r[1] * .55 - DEEP.FLOOR;
-  const falls = put('falls', 11, -9, -3, [5, 5.5, 5]), echo = put('echo', -1, -15, -5, [6, 3.5, 5]), lode = put('lode', -13, -9, -9, [4.5, 3, 4.5]), geode = put('geode', -11, 10, -6, [3.2, 2.8, 3.2]);
-  const lava = put('lava', 1, 15, -8, [6, 3.6, 6]), crystal = put('crystal', 14, 8, -5, [5.5, 4.5, 5.5]); put('flood', 19, -2, -10, [4.5, 3, 4.5]);
-  // the railway: across Munch's room, down through the caves (on trestles over the falls' pool and the lava), round under the shaft, and a long climb home
-  const way = [[3, 2.5, 0], [3.5, -3.5, -.2], [6, -7.5, -1.5], [11, -9, fl(falls) + 1.6], [7, -14, -5.5], [-1, -15, fl(echo) + .3], [-8, -14, -8], [-13, -9, fl(lode) + .3], [-16, 0, -10],
-    [-11, 10, fl(geode) + .3], [-5, 15, -7], [1, 15, fl(lava) + 2.2], [8, 13, -6.5], [14, 8, fl(crystal) + .3], [10, 6, -4.5], [5.5, 6, -1.8]];
-  const curve = new THREE.CatmullRomCurve3(way.map(w => demoAt(...w)), true, 'centripetal'), L = curve.getLength(), n = Math.round(L / .25), P = curve.getSpacedPoints(n);
+  const list = [{ kind: 'echo', shape: 'blob', c: demoAt(12, -9, .6), r: [8.5, 3.1, 7], rad: 8.5, flatY: DEEP.FLOOR, ...CAVE_KINDS.echo, name: 'The Big Dig' }];
+  const way = [[6, -4], [10, -3.5], [15, -4], [18.5, -7], [17.5, -12], [12, -14], [7, -12], [5, -8]]; // the ground's only 5-6 m overhead round here, so the cave is low and keeps off the dip towards the river
+  const curve = new THREE.CatmullRomCurve3(way.map(([a, b]) => demoAt(a, b, 0)), true, 'centripetal'), L = curve.getLength(), n = Math.round(L / .25), P = curve.getSpacedPoints(n);
   DEEP.rail = { P, L, n, on: false, s: 0, v: 0 };
   list.push({ kind: 'rail', shape: 'tube', pts: P.filter((p, i) => i % 6 === 0).concat([P[0]]).map(p => p.clone().add(new V3(0, 1.4, 0))), r: 2.1, rad: 2.3, rail: true });
-  // crevices off the tunnels, lined with the good stuff
-  for (const [a, b, y, da, db] of [[-5, 6, -1.5, -.3, 1], [4, -6, -1.5, .4, -1], [-8, -5, -3, -.6, -1], [8, 8, -2.5, .2, 1], [15, 2, -6.5, 1, -.4]]){
-    const l = Math.hypot(da, db), pts = [0, 1, 2].map(k => demoAt(a + da / l * 4.5 * k + (rng() - .5) * k, b + db / l * 4.5 * k + (rng() - .5) * k, y - .6 * k));
-    list.push({ kind: 'crack', shape: 'crack', pts, h: 4.2, w: .85, rad: 2, rich: true });
-  }
   return list;
 }
 // distance (in metres, negative inside) from a point to a cave
@@ -6100,7 +6091,7 @@ function seedDeposits(rng){
   // the demo: ore everywhere you look, and plenty of the good stuff
   if (DEMO) for (let y = D.FLOOR + 6; y > D.FLOOR - 22; y -= 1){
     const W = { coal: 6, copper: 22, iron: 16, sulfur: 9, steel: 15, gold: 17, gem: 13 };
-    for (let v = 0; v < 160; v++){
+    for (let v = 0; v < 260; v++){
       const a = rng() * 6.283, r = Math.sqrt(rng()) * 25; let x = D.CX + Math.cos(a) * r, yy = y - rng(), z = D.CZ + Math.sin(a) * r;
       const ore = pickW(W), n = 2 + Math.floor(rng() * 3), dir = new V3(rng() - .5, (rng() - .5) * .5, rng() - .5).normalize().multiplyScalar(.55);
       for (let q = 0; q < n; q++){ add(x, yy, z, ore, rng() < .25); x += dir.x + (rng() - .5) * .3; yy += dir.y + (rng() - .5) * .3; z += dir.z + (rng() - .5) * .3; }
@@ -6150,7 +6141,7 @@ const PATCH = { dirt: new THREE.Color(0x7a5a3e), gravel: new THREE.Color(0x8a847
 const _dc = new THREE.Color(), _dc2 = new THREE.Color();
 // a cheap distance to a cave for tinting (no noise)
 function featNear(f, x, y, z){
-  if (f.shape === 'blob') return (Math.hypot((x - f.c.x) / f.r[0], (y - f.c.y) / f.r[1], (z - f.c.z) / f.r[2]) - 1) * Math.min(...f.r);
+  if (f.shape === 'blob'){ const d = (Math.hypot((x - f.c.x) / f.r[0], (y - f.c.y) / f.r[1], (z - f.c.z) / f.r[2]) - 1) * Math.min(...f.r); return f.flatY === undefined ? d : Math.max(d, f.flatY - .02 - y); }
   if (f.shape === 'tube'){ let b = 1e9; for (const p of f.pts) b = Math.min(b, Math.hypot(x - p.x, y - p.y, z - p.z)); return b - f.r - 3; }
   return 1e9;
 }
@@ -6495,14 +6486,14 @@ function dressFeat(f, rng){
   const D = DEEP, g = D.deco, fl = f.shape === 'blob' ? f.c.y - f.r[1] * .55 : 0;
   const rnd = (a, b) => a + rng() * (b - a);
   const inside = () => { const a = rng() * 6.283, k = Math.sqrt(rng()) * .8; return [f.c.x + Math.cos(a) * f.r[0] * k, f.c.z + Math.sin(a) * f.r[2] * k]; };
-  // dripstone hanging from the roof and growing from the floor
-  if (f.shape === 'blob' && f.kind !== 'geode' && f.kind !== 'lode'){
+  // dripstone hanging from the roof and growing from the floor (none in the demo's low, flat cave, where the railway runs)
+  if (f.shape === 'blob' && f.kind !== 'geode' && f.kind !== 'lode' && f.flatY === undefined){
     const n = { echo: 16, falls: 10, flood: 12, lava: 10, crystal: 6 }[f.kind] || 8;
     for (let i = 0; i < n; i++){
       const [x, z] = inside(), top = ceilingAt(x, f.c.y, z, f.r[1] + 3), bot = deepGround(x, f.c.y, z), hh = rnd(.7, 2.2), rr = .14 + hh * .17;
       const col = new THREE.Color(); if (deepColor(x, f.c.y, z, col) > 0) col.copy(DCOL[deepLayerI(DEEP.FLOOR - f.c.y)]); const mat = M(col.getHex());
       if (top !== null && top - f.c.y < f.r[1] + 2.5){ const m = new THREE.Mesh(new THREE.ConeGeometry(rr, hh, 5), mat); m.rotation.x = Math.PI; m.position.set(x, top - hh / 2 + .1, z); deco(m, new V3(x, top, z)); }
-      if (isFinite(bot) && rng() < .35 && !(f.kind === 'lava' || f.kind === 'flood')){ const h2 = hh * rnd(.5, 1.1), m = new THREE.Mesh(new THREE.ConeGeometry(rr * 1.2, h2, 5), mat); m.position.set(x + rnd(-.3, .3), bot + h2 / 2 - .1, z + rnd(-.3, .3)); deco(m, new V3(x, bot, z)); }
+      if (isFinite(bot) && rng() < .35 && !(f.kind === 'lava' || f.kind === 'flood') && f.flatY === undefined){ const h2 = hh * rnd(.5, 1.1), m = new THREE.Mesh(new THREE.ConeGeometry(rr * 1.2, h2, 5), mat); m.position.set(x + rnd(-.3, .3), bot + h2 / 2 - .1, z + rnd(-.3, .3)); deco(m, new V3(x, bot, z)); }
     }
   }
   if (f.kind === 'geode'){
@@ -6514,7 +6505,7 @@ function dressFeat(f, rng){
     deepLampAt(f.c.clone().add(new V3(3, -1, 0)), 0xa080ff, 6, 15); deepLampAt(f.c.clone().add(new V3(-3, -1, 1)), 0x6ae0ff, 5, 14);
   }
   if (f.kind === 'lode'){ deepLampAt(f.c, 0xffc040, 11, 16); deepLampAt(f.c.clone().add(new V3(2.5, -1, 1.5)), 0xffd870, 6, 10); const y = deepGround(f.c.x, f.c.y, f.c.z); if (isFinite(y)) deepChest(new V3(f.c.x, y, f.c.z), rng() * 6, true); }
-  if (f.kind === 'echo'){ const [x, z] = inside(), y = deepGround(x, f.c.y, z); if (isFinite(y) && rng() < .7) deepChest(new V3(x, y, z), rng() * 6, false); }
+  if (f.kind === 'echo' && f.flatY === undefined){ const [x, z] = inside(), y = deepGround(x, f.c.y, z); if (isFinite(y) && rng() < .7) deepChest(new V3(x, y, z), rng() * 6, false); }
   if (f.kind === 'falls'){
     // the waterfall pours out of a crack in the roof near one wall, into a pool that fills the floor
     const a = rng() * 6.283, x = f.c.x + Math.cos(a) * f.r[0] * .5, z = f.c.z + Math.sin(a) * f.r[2] * .5, top = ceilingAt(x, f.c.y, z, 12) ?? f.c.y + f.r[1], bot = fl + .35, H = top - bot;
@@ -6735,31 +6726,33 @@ function railPose(s, out, tan){
 function railPlace(s){ const R = DEEP.rail; railPose(s, _rp, _rt); R.cart.position.copy(_rp); R.cart.lookAt(_rp.clone().sub(_rt)); }
 function railBoard(){
   const R = DEEP.rail; if (!R || R.on) return;
-  R.on = true; R.s = 0; R.v = 2.5; R.yaw0 = player.yaw; player.pitch = 0; R.shake = 0; state.swing = null; player.vel.set(0, 0, 0);
+  R.on = true; R.s = R.cs || 0; R.v = 0; R.yaw0 = player.yaw; player.pitch = 0; R.shake = 0; state.swing = null; player.vel.set(0, 0, 0);
   for (const id of ['hotbar', 'carry', 'satchel']) if ($(id)) $(id).style.display = 'none'; $('help').hidden = true; $('prompt').style.display = 'none';
-  SFX.gate && SFX.gate(); toast('Hold on to your hat!');
+  SFX.gate && SFX.gate(); toast('<b>W</b> to roll, <b>S</b> to brake and back up, <b>E</b> to hop off');
 }
+// you hop out beside the cart wherever you've stopped it
 function railOff(){
-  const R = DEEP.rail; R.on = false; R.s = 0; R.v = 0; railPlace(0);
-  const p = R.P[0], t = R.T[0];
-  for (const sg of [1.7, -1.7]){ const q = p.clone().add(new V3(-t.z, 0, t.x).normalize().multiplyScalar(sg)), y = deepGround(q.x, p.y + .4, q.z); if (isFinite(y) && den(q.x, y + 1, q.z) <= 0){ player.pos.set(q.x, y, q.z); break; } player.pos.copy(p); }
+  const R = DEEP.rail; R.on = false; R.cs = ((R.s % R.L) + R.L) % R.L; R.v = 0; railPlace(R.cs);
+  // you step out onto the track just behind the cart (the railway always runs through open space)
+  const t = railPose(R.cs, new V3(), _rt) && _rt.clone(), p = railPose(R.cs - 1.6, new V3());
+  player.pos.set(p.x, p.y + .05, p.z);
   player.vel.set(0, 0, 0); player.yaw = Math.atan2(-t.x, -t.z); player.pitch = 0; player.onGround = true;
   camera.fov = SETTINGS.fov; camera.updateProjectionMatrix();
   for (const id of ['hotbar', 'carry', 'satchel']) if ($(id)) $(id).style.display = ''; $('help').hidden = false; updateHUD();
-  demoTick('ride');
 }
+function railHop(){ const R = DEEP.rail; if (Math.abs(R.v) > 1.5){ if (throttle('railslow', 1500)) toast('Brake first (<b>S</b>), then hop off.'); return; } railOff(); }
 function updateRail(dt){
   const R = DEEP.rail, p = railPose(R.s, _rp, _rt), t = _rt;
-  // gravity runs you down the drops, a chain hauls you up the climbs, and the brakes bring you home
-  R.v = clamp(R.v + (-t.y * 9.8 - .015 * R.v * R.v) * dt, 3, 12.5);
-  const left = R.L - R.s; if (left < 9) R.v = Math.min(R.v, 1 + left * .7);
-  if (t.y > .12 && R.v < 3.2 && throttle('railchain', 230)) noiseHit && noiseHit({ type: 'bandpass', f: 1500, q: 5, dur: .035, g: .05 });
-  R.s += R.v * dt; if (R.s >= R.L - .05){ railOff(); return; }
+  // you drive it: W rolls you on, S brakes and then backs you up, and it coasts to a stop on its own
+  const go = keys.KeyW || keys.ArrowUp, back = keys.KeyS || keys.ArrowDown;
+  if (go) R.v += 4 * dt; else if (back) R.v -= (R.v > 0 ? 9 : 3) * dt; else R.v -= Math.sign(R.v) * Math.min(Math.abs(R.v), .8 * dt);
+  R.v = clamp(R.v - t.y * 9.8 * dt, -3, 9);
+  if (Math.abs(R.v) > 1 && throttle('railclack', 2600 / Math.abs(R.v))) noiseHit && noiseHit({ type: 'bandpass', f: 900, q: 3, dur: .04, g: .04 });
+  R.s += R.v * dt;
   railPlace(R.s);
   player.pos.copy(p); player.vel.set(0, 0, 0);
-  const sh = R.v / 12.5 * .02, yaw = Math.atan2(-t.x, -t.z) + clamp(player.yaw - R.yaw0, -1.9, 1.9), pitch = clamp(Math.asin(clamp(t.y, -1, 1)) * .8 + player.pitch, -1.4, 1.4);
+  const sh = Math.abs(R.v) / 9 * .015, yaw = Math.atan2(-t.x, -t.z) + clamp(player.yaw - R.yaw0, -1.9, 1.9), pitch = clamp(Math.asin(clamp(t.y, -1, 1)) * .8 + player.pitch, -1.4, 1.4);
   camera.position.set(p.x + mr(-sh, sh), p.y + 1.55 + mr(-sh, sh), p.z + mr(-sh, sh)); camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
-  const fov = SETTINGS.fov + clamp((R.v - 5) * .9, 0, 10); if (Math.abs(camera.fov - fov) > .05){ camera.fov = lerp(camera.fov, fov, Math.min(1, dt * 3)); camera.updateProjectionMatrix(); }
 }
 // anything stuck to rock you just dug away falls off (or goes out, for torches)
 function deepDecorCut(c, r){
@@ -6907,7 +6900,7 @@ const deepShop = (() => {
 function deepTag(it){
   return canvasTex(200, 110, (c, w, h) => {
     const own = it.own(); c.fillStyle = own ? '#d9cfb8' : '#f3e3c3'; c.fillRect(0, 0, w, h); c.strokeStyle = '#5a3b1f'; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 6);
-    c.textAlign = 'center'; c.fillStyle = '#3a1f0e'; c.font = '800 22px Nunito'; c.fillText(it.name, w / 2, 42); c.font = '26px Rye'; c.fillStyle = own ? '#2f7a3a' : '#a3301f'; c.fillText(own ? 'OWNED' : '$' + it.price, w / 2, 84);
+    c.textAlign = 'center'; c.fillStyle = '#3a1f0e'; c.font = '800 22px Nunito'; c.fillText(it.name, w / 2, 42); c.font = '26px "Lilita One"'; c.fillStyle = own ? '#2f7a3a' : '#a3301f'; c.fillText(own ? 'OWNED' : '$' + it.price, w / 2, 84);
   });
 }
 function deepBuy(it){
@@ -7225,7 +7218,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'f4870df993c4b4abef594b91' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '0cfc6fddda4af44f1d7a7fa1' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }
@@ -7281,7 +7274,7 @@ var DEMO = false;
 const DEMO_TASKS = [['ore', 'Swing your pick at an ore glint'], ['munch', "Feed Ol' Munch some ore"], ['boom', 'Throw a stick of dynamite'], ['ride', 'Ride the mine cart through the caves'], ['cave', 'Find a cave (or dig into a crevice)']];
 const demoDone = new Set();
 function demoTick(k){
-  if (!DEMO || demoDone.has(k)) return; demoDone.add(k); demoList(k); SFX.reveal && SFX.reveal();
+  if (!DEMO || DEMO || demoDone.has(k)) return; demoDone.add(k); demoList(k); SFX.reveal && SFX.reveal();
   const t = DEMO_TASKS.find(q => q[0] === k); if (t) toast(`<b>Done:</b> ${t[1]}`);
   if (demoDone.size === DEMO_TASKS.length) setTimeout(() => { if (!started) return; document.exitPointerLock && document.exitPointerLock(); menuOpen = true; $('demoend').hidden = false; }, 1400);
 }
@@ -7302,15 +7295,14 @@ function startDemo(){
   DEMO = true; initAudio();
   // a fixed claim so the demo always looks its best, with just the basics
   state.seed = 4242; state.money = 50; state.dyn = 3; state.torches = 6; state.gotTorches = true;
-  for (const k of ['pick2', 'drill', 'jack', 'pan', 'lantern']) state.owned[k] = false;
+  for (const k of ['pick2', 'drill', 'pan', 'lantern']) state.owned[k] = false; state.owned.jack = true;
   started = true; menuOpen = false; $('title').hidden = true;
   for (const id of ['money', 'loc', 'cross', 'help']) $(id).hidden = false;
   player.pos.set(2, terrainH(2, 17.5) + .05, 17.5); player.yaw = 0; player.pitch = -.05;
   player.tn = null; setZone(zoneOf(player.pos)); player.safe = null; selectTool('pick'); updateHUD(); updateEnv(0, true); camera.fov = SETTINGS.fov; camera.updateProjectionMatrix();
   $('p-save').hidden = true; $('p-quit').textContent = 'Quit the Demo';
   $('help').innerHTML = $('help').innerHTML.replace(/ · <b>X<\/b> mods/, '');
-  $('demohud').hidden = false; demoList();
-  setTimeout(() => toast("Welcome to the demo! Ol' Munch is down the mine past the timbers, and his cart's waiting by him. Try the things on the list."), 900);
+  setTimeout(() => toast("Munch's Mine is just behind the camp. Dig in!"), 900);
   requestLock();
 }
 $('b-demo').onclick = () => startDemo();
@@ -7446,7 +7438,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
   if (state.riding){ if (e.code === 'KeyE') stopDrive(false); else if (e.code === 'Space') stopDrive(true); return; }
-  if (DEEP.rail && DEEP.rail.on && (e.code === 'KeyE' || e.code === 'Space')) return;
+  if (DEEP.rail && DEEP.rail.on){ if (e.code === 'KeyE' || e.code === 'Space') railHop(); return; }
   if (e.code === 'KeyE'){ if (cart.off && cart.off.grab){ releaseCart(); return; } interact(); }
   else if (e.code === 'KeyQ'){ if (state.carrying) state.qHold = 0; }
   else if (e.code === 'KeyG' && cart.off && !state.riding && (state.zone === 4 || cart.zone === 4)) mineRescue(false);

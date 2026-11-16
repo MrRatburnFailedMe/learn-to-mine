@@ -576,7 +576,7 @@ const NUG_D = {}, DEMO_NUG = { copper: 0xff7424, iron: 0xd8653e, steel: 0x7fd4ff
 function demoNug(type, c, mt, rg){ const col = new THREE.Color(DEMO_NUG[type] ?? c); return MS(col.getHex(), { metalness: Math.min(mt, .45), roughness: rg, emissive: col.clone().multiplyScalar(type === 'coal' ? 0 : .3) }); }
 function oreMesh(type){
   const [c, mt, rg] = NUGGET[type] || [ORES[type] ? ORES[type].chip : 0x999999, .2, .6], g = new THREE.Group();
-  const mat = DEMO ? NUG_D[type] || (NUG_D[type] = demoNug(type, c, mt, rg)) : NUG_M[type] || (NUG_M[type] = MS(c, { metalness: mt, roughness: rg }));
+  const mat = NUG_M[type] || (NUG_M[type] = MS(c, { metalness: mt, roughness: rg }));
   const m = mk(lowpoly(new THREE.IcosahedronGeometry(.15, 1), .035), mat, g); m.scale.set(1.2, .82, 1); m.castShadow = true;
   return g;
 }
@@ -5959,16 +5959,15 @@ function planCaves(rng){
   }
   return list;
 }
-// ---------------------------------------------------------------- the demo's mine: Munch's room opens into one big cave with a little railway round it,
-// and all the rock around is packed with ore. (a = along the shaft past the room, b = to the side, y = up from the room floor)
+// ---------------------------------------------------------------- the demo's mine: Munch's room in ordinary rock, and an old timbered mineshaft off to the right
+// with a mine cart on a loop of track. (a = along the shaft past the room, b = to the right, y = up from the room floor)
 function demoAt(a, b, y){ return new V3(KN.room.x + KN.f.x * a - KN.f.z * b, DEEP.FLOOR + y, KN.room.z + KN.f.z * a + KN.f.x * b); }
 function planDemo(rng){
-  const list = [{ kind: 'echo', shape: 'blob', c: demoAt(12, -9, .6), r: [8.5, 3.1, 7], rad: 8.5, flatY: DEEP.FLOOR, ...CAVE_KINDS.echo, name: 'The Big Dig' }];
-  const way = [[6, -4], [10, -3.5], [15, -4], [18.5, -7], [17.5, -12], [12, -14], [7, -12], [5, -8]]; // the ground's only 5-6 m overhead round here, so the cave is low and keeps off the dip towards the river
+  // the ground's only 5-6 m over the room, so the shaft keeps level and stays clear of the dip towards the river
+  const way = [[6.5, 4.5], [9, 7.5], [10, 11.5], [8, 15.5], [3.5, 17], [-.5, 14.5], [0, 10.5], [3, 7.5]];
   const curve = new THREE.CatmullRomCurve3(way.map(([a, b]) => demoAt(a, b, 0)), true, 'centripetal'), L = curve.getLength(), n = Math.round(L / .25), P = curve.getSpacedPoints(n);
   DEEP.rail = { P, L, n, on: false, s: 0, v: 0 };
-  list.push({ kind: 'rail', shape: 'tube', pts: P.filter((p, i) => i % 6 === 0).concat([P[0]]).map(p => p.clone().add(new V3(0, 1.4, 0))), r: 2.1, rad: 2.3, rail: true });
-  return list;
+  return [{ kind: 'rail', shape: 'tube', pts: P.filter((p, i) => i % 6 === 0).concat([P[0]]).map(p => p.clone().add(new V3(0, 1.4, 0))), r: 2.1, rad: 2.3, rail: true }];
 }
 // distance (in metres, negative inside) from a point to a cave
 function featSD(f, x, y, z){
@@ -6088,16 +6087,7 @@ function seedDeposits(rng){
   const richer = (w, x, z) => { const o = { ...w }, b = 1 + Math.hypot(x - D.CX, z - D.CZ) / 20; for (const k in o) if (ORES[k].tier >= 3) o[k] *= b; return o; };
   const add = (x, y, z, ore, big) => { if (den(x, y, z) <= .05 || den(x, y, z) >= 5.9) return; D.deps.push({ x, y, z, ore, big: !!big, mesh: null, gone: false, rot: rng() * 6.28 }); };
   const span = (D.NX - 4) * D.S;
-  // the demo: ore everywhere you look, and plenty of the good stuff
-  if (DEMO) for (let y = D.FLOOR + 6; y > D.FLOOR - 22; y -= 1){
-    const W = { coal: 6, copper: 22, iron: 16, sulfur: 9, steel: 15, gold: 17, gem: 13 };
-    for (let v = 0; v < 260; v++){
-      const a = rng() * 6.283, r = Math.sqrt(rng()) * 25; let x = D.CX + Math.cos(a) * r, yy = y - rng(), z = D.CZ + Math.sin(a) * r;
-      const ore = pickW(W), n = 2 + Math.floor(rng() * 3), dir = new V3(rng() - .5, (rng() - .5) * .5, rng() - .5).normalize().multiplyScalar(.55);
-      for (let q = 0; q < n; q++){ add(x, yy, z, ore, rng() < .25); x += dir.x + (rng() - .5) * .3; yy += dir.y + (rng() - .5) * .3; z += dir.z + (rng() - .5) * .3; }
-    }
-  }
-  if (!DEMO) for (let y = D.top - 2; y > D.y0 + 2; y -= 1){
+  for (let y = D.top - 2; y > D.y0 + 2; y -= 1){
     const L = DEEP_LAYERS[deepLayerI(D.FLOOR - y)], veins = span * span / 300;
     for (let v = 0; v < veins; v++){
       let x = D.x0 + 2 + rng() * span, yy = y - rng(), z = D.z0 + 2 + rng() * span;
@@ -6108,7 +6098,7 @@ function seedDeposits(rng){
   }
   // every cave is lined with ore you can see the moment you break in; the geode, the cathedral and the lode are lined with the good stuff
   // walk out from a point inside until we hit the wall, and tuck a lump just behind its surface
-  const wall = (p, d, ore, big) => { let t = .3; while (t < 12 && den(p.x + d.x * t, p.y + d.y * t, p.z + d.z * t) <= 0) t += .15; t += DEMO ? .12 : .22; add(p.x + d.x * t, p.y + d.y * t, p.z + d.z * t, ore, big); };
+  const wall = (p, d, ore, big) => { let t = .3; while (t < 12 && den(p.x + d.x * t, p.y + d.y * t, p.z + d.z * t) <= 0) t += .15; t += .22; add(p.x + d.x * t, p.y + d.y * t, p.z + d.z * t, ore, big); };
   const W2 = { copper: 3, iron: 3, steel: 3, gold: 3, gem: 2 };
   for (const f of D.feats){
     if (f.shape === 'crack'){
@@ -6118,18 +6108,13 @@ function seedDeposits(rng){
       }
       continue;
     }
-    if (f.rail){
-      // the railway runs between walls studded with ore the whole way round
-      const P = D.rail.P;
-      for (let i = 0; i < D.rail.n * 2; i += 3){ const i2 = i % D.rail.n, t = P[(i2 + 1) % D.rail.n].clone().sub(P[i2]).normalize(), sd = i < D.rail.n ? -1 : 1, d = new V3(-t.z * sd, rng() * .9 - .1, t.x * sd).normalize(); wall(P[i2].clone().add(new V3(0, .9 + rng() * .8, 0)), d, pickW(W2), rng() < .3); }
-      continue;
-    }
+    if (f.rail) continue;
     if (f.shape !== 'blob') continue;
-    const lining = { geode: 'gem', crystal: 'gem', lode: 'gold' }[f.kind], n = DEMO ? (f.kind === 'lode' ? 160 : lining ? 100 : 90) : f.kind === 'lode' ? 26 : lining ? 9 : 4, L = DEEP_LAYERS[deepLayerI(D.FLOOR - f.c.y)];
+    const lining = { geode: 'gem', crystal: 'gem', lode: 'gold' }[f.kind], n = f.kind === 'lode' ? 26 : lining ? 9 : 4, L = DEEP_LAYERS[deepLayerI(D.FLOOR - f.c.y)];
     for (let q = 0; q < n; q++){
       // walk out from the middle until we hit the wall, and tuck the lump just behind its surface
       const a = rng() * 6.283, b = Math.acos(rng() * 1.6 - .6), dx = Math.sin(b) * Math.cos(a), dy = Math.cos(b), dz = Math.sin(b) * Math.sin(a);
-      let t = .5; while (t < 12 && den(f.c.x + dx * t, f.c.y + dy * t, f.c.z + dz * t) <= 0) t += .15; t += DEMO ? .12 : .22;
+      let t = .5; while (t < 12 && den(f.c.x + dx * t, f.c.y + dy * t, f.c.z + dz * t) <= 0) t += .15; t += .22;
       const x = f.c.x + dx * t, y = f.c.y + dy * t, z = f.c.z + dz * t;
       add(x, y, z, lining ? (rng() < .6 ? lining : f.kind === 'lode' ? 'gem' : 'steel') : pickW(richer(L.ores, x, z)), rng() < (f.kind === 'lode' ? .3 : .1));
     }
@@ -6155,7 +6140,7 @@ function deepColor(x, y, z, out){
   const h = dHash(Math.floor(x * 3), Math.floor(y * 3), Math.floor(z * 3)), h2 = dHash(Math.floor(z * 3), Math.floor(x * 3), Math.floor(y * 3));
   let glow = 0, near = null, nd = 9;
   for (const f of DEEP.tints || []){ const dd = featNear(f, x, y, z); if (dd < 2.6){ const t = 1 - smooth(0, 2.6, dd); out.lerp(_dc2.setHex(f.tint), t * .8); if (dd < nd){ nd = dd; near = f; } } }
-  out.multiplyScalar(.9 + h * .2); if (DEMO) out.offsetHSL(0, .12, .02);
+  out.multiplyScalar(.9 + h * .2);
   if (near && nd < 1.2){
     if (near.kind === 'crystal' && h2 < .12){ out.setHex(h < .5 ? 0xa080ff : 0x6ae0ff); glow = .6; }
     else if (near.kind === 'lava' && h2 < .04){ out.setHex(0xff5a1a); glow = 1; }
@@ -6174,7 +6159,7 @@ const ORE_SAMPLES = [[.42, 0, 0], [-.42, 0, 0], [0, .42, 0], [0, -.42, 0], [0, 0
 function deepAir(dp){ let a = 0; for (const s of ORE_SAMPLES) if (den(dp.x + s[0], dp.y + s[1], dp.z + s[2]) <= 0) a++; return a; }
 function deepExpose(dp){
   if (dp.gone || dp.mesh) return; if (deepAir(dp) === 0) return;
-  const m = oreMesh(dp.ore); m.scale.setScalar((dp.big ? 1.05 : .72) * (DEMO ? 1.5 : 1)); m.position.set(dp.x, dp.y, dp.z); m.rotation.set(dp.rot, dp.rot * 2, 0);
+  const m = oreMesh(dp.ore); m.scale.setScalar(dp.big ? 1.05 : .72); m.position.set(dp.x, dp.y, dp.z); m.rotation.set(dp.rot, dp.rot * 2, 0);
   m.traverse(o => { if (o.isMesh){ o.castShadow = false; o.userData.dep = dp; } }); deepG.add(m); dp.mesh = m;
 }
 // ---------------------------------------------------------------- meshing (surface nets, one flat-shaded facet per triangle)
@@ -7218,7 +7203,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '0cfc6fddda4af44f1d7a7fa1' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '2350115253b0cc773f3f1ecd' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }
@@ -7260,15 +7245,26 @@ function fbQueue(){ try { return JSON.parse(localStorage.getItem('gr_feedback_qu
 async function fbPost(n){ const r = await fetch(FB.url + '/feedback', { method: 'POST', body: JSON.stringify({ ...n, token: FB.token }) }); if (!r.ok) throw new Error('status ' + r.status); return r.json(); }
 // anything that couldn't be sent waits in this browser and goes the next time a note gets through
 async function fbFlush(){ let q = fbQueue(); while (q.length){ try { await fbPost(q[0]); } catch (e){ return; } q.shift(); try { localStorage.setItem('gr_feedback_queue', JSON.stringify(q)); } catch (e){ return; } } }
+const FB_LOCAL = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+function fbIssue(n){
+  const line = q => `- **${q.level ? q.level.place : '?'}**${q.options && q.options.length ? ' (' + q.options.join(', ') + ')' : ''}: ${q.note || ''}\n  at ${q.player ? q.player.pos.join(', ') + ' facing ' + q.player.yaw + ' / ' + q.player.pitch : '?'}${q.cart ? ', cart ' + q.cart.piece + ' @ ' + q.cart.s : ''}`;
+  const old = fbQueue(); try { localStorage.removeItem('gr_feedback_queue'); } catch (e){}
+  const body = `${n.note || '(no words)'}\n\n${line(n)}\n\n(paste the screenshot here: it's on your clipboard)\n\nmode: ${DEMO ? 'demo' : 'full game'} · ${n.version || ''} · ${n.created || ''}` + (old.length ? `\n\n**Earlier notes that didn't send:**\n${old.map(line).join('\n')}` : '');
+  const title = (n.note || n.options.join(', ') || 'Feedback').slice(0, 80);
+  try { if (n.screenshot && window.ClipboardItem) navigator.clipboard.write([new ClipboardItem({ 'image/png': fetch(n.screenshot).then(r => r.blob()).then(b => createImageBitmap(b)).then(bm => { const c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0); return new Promise(res => c.toBlob(res, 'image/png')); }) })]).catch(() => {}); } catch (e){}
+  window.open(`https://github.com/MrRatburnFailedMe/learn-to-mine/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`, '_blank');
+  toast('Opened GitHub: press <b>Create</b> there (and paste the screenshot if you like).');
+}
 async function fbSend(){
   const note = $('fb-note').value.trim();
   if (!note && !FB.opts.size){ $('fb-note').placeholder = 'Pick an option or write a word first'; SFX.nope(); return; }
   const n = { ...FB.ctx, options: [...FB.opts], note, screenshot: FB.shot };
+  if (!FB_LOCAL){ fbReset(); fbClose(); SFX.click(); fbIssue(n); return; }
   fbReset(); fbClose(); SFX.click();
   try { const r = await fbPost(n); toast(`Thanks! Feedback <b>${r.id}</b> sent.`); fbFlush(); }
   catch (e){ const q = fbQueue(); q.push(n); while (q.length > 20) q.shift(); try { localStorage.setItem('gr_feedback_queue', JSON.stringify(q)); toast('Feedback saved. It will send once the feedback server is running.'); } catch (e2){ toast('Feedback could not be saved.'); } }
 }
-setTimeout(fbFlush, 4000);
+if (FB_LOCAL) setTimeout(fbFlush, 4000);
 // ============================================================ THE DEMO
 var DEMO = false;
 const DEMO_TASKS = [['ore', 'Swing your pick at an ore glint'], ['munch', "Feed Ol' Munch some ore"], ['boom', 'Throw a stick of dynamite'], ['ride', 'Ride the mine cart through the caves'], ['cave', 'Find a cave (or dig into a crevice)']];

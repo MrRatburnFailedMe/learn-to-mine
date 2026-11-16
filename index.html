@@ -2528,7 +2528,7 @@ function doHit(){
   if (n.dot(d) > 0) n.negate();
   player.shake = .1; player.kick = .035;
   if (h.object.userData.sulfur){ hitSulfur(h.object.userData.sulfur, h.point, n, kind); return true; }
-  if (h.object.userData.vein){ hitVein(h.object.userData.vein, h.point, n, pickPower()); return true; }
+  { const v = z === 0 ? veinNear(h.object, h.point) : h.object.userData.vein; if (v){ hitVein(v, h.point, n, pickPower()); return true; } }
   if (isCave(z) && h.object.userData.cell){ SFX.pickHit(false); sparks(h.point, 3); chips(h.point, 3, 0x777068, n); return true; }
   if (h.object.userData.isMiner){ farmerHit(); SFX.ow(); minerSay(mpick(['OW! Watch it, greenhorn!', 'That\'s my FACE!', 'Do I look like ore to you?!'])); return true; }
   kind === 'shovel' ? SFX.shovelHit() : SFX.pickHit(false);
@@ -2569,7 +2569,7 @@ function doDrill(jack){
   const z = state.zone, d = raycaster.ray.direction;
   if (jack){ SFX.jack(); player.shake = Math.max(player.shake, .35); } else SFX.drill();
   if (z === 6){ deepDrill(jack); return; }
-  if (!isCave(z)) { const h0 = raycaster.intersectObjects(z === 0 ? surfaceHit : [], true)[0]; if (h0){ sparks(h0.point, 2); const v = h0.object.userData.vein; if (v && v.alive && throttle('drillvein', jack ? 260 : 380)){ const n = h0.face ? h0.face.normal.clone().transformDirection(h0.object.matrixWorld) : raycaster.ray.direction.clone().negate(); hitVein(v, h0.point, n, jack ? 1.5 : 1.2); } } return; }
+  if (!isCave(z)) { const h0 = raycaster.intersectObjects(z === 0 ? surfaceHit : [], true)[0]; if (h0){ sparks(h0.point, 2); const v = veinNear(h0.object, h0.point); if (v && v.alive && throttle('drillvein', jack ? 260 : 380)){ const n = h0.face ? h0.face.normal.clone().transformDirection(h0.object.matrixWorld) : raycaster.ray.direction.clone().negate(); hitVein(v, h0.point, n, jack ? 1.5 : 1.2); } } return; }
   drillVein(caveZ(z), jack);
 }
 function breakCell(cv, c){
@@ -4963,6 +4963,16 @@ for (const cv of caves) seedVeins(cv);
 // ---------------------------------------------------------------- hitting a vein
 const mining = { streak: 0, lastHit: 0 };
 function pickPower(){ return state.owned.pick2 ? 1.5 : 1; }
+// which ore rock a mesh belongs to, and the live vein nearest a point on it
+function outcropOf(o){ for (const c of OUTCROPS) for (let p = o; p; p = p.parent) if (p === c.group) return c; return null; }
+const _ocv = new V3();
+function veinNear(o, at){
+  const v0 = o.userData.vein; if (v0 && v0.alive) return v0;
+  const c = outcropOf(o); if (!c) return null;
+  let best = null, bd = 1.6; for (const v of c.veins){ if (!v.alive) continue; const d = v.g.getWorldPosition(_ocv).distanceTo(at); if (d < bd){ bd = d; best = v; } }
+  if (!best && throttle('minedout', 4000)) toast(c.veins.some(v => v.alive) ? 'Hit the rock nearer the glinting ore.' : "This rock's mined out. The ore shows again in a couple of minutes.");
+  return best;
+}
 function hitVein(v, point, nrm, power = 1){
   if (!v.alive) return;
   const gp = v.gb ? v.gb.getWorldPosition(new V3()) : null, crit = gp && gp.distanceTo(point) < .34 * Math.max(1, power);
@@ -7190,7 +7200,7 @@ function endHoney(){
   if (HP.bear){ surface.remove(HP.bear.root); HP.bear.mixer.stopAllAction(); HP.bear = null; }
   if (HP.fishM){ surface.remove(HP.fishM); HP.fishM = null; }
   if (HP.mouth){ const g = HP.mouth; HP.mouth = null; setTimeout(() => surface.remove(g), 15000); }
-  HP.on = false; HP.phase = ''; HP.fish = true; updateHoneyBar(); updateHUD();
+  HP.on = false; HP.phase = ''; HP.fish = true; HP.den = false; bearDen.eyes.visible = true; updateHoneyBar(); updateHUD();
 }
 // ---------------------------------------------------------------- every frame
 function updateHoney(dt){
@@ -7205,13 +7215,24 @@ function updateHoney(dt){
     // the ground rumbles, harder and harder
     player.shake = Math.max(player.shake, HP.t * .14);
     if (throttle('hprumble', 420)) noiseHit({ type: 'lowpass', f: 90 + HP.t * 20, dur: .6, g: .25 + HP.t * .12 });
-    if (HP.t > 3){ const at = honeyCaveSpot(); HP.mouth = buildHoneyMouth(at); spawnHoneyBear(at); HP.phase = 'emerge'; HP.t = 0; SFX.breakRock(); SFX.thud && SFX.thud(20); player.shake = .8; toast('<b>Honey Pot</b> wants that fish. Shoot!'); }
+    if (HP.t > 3){
+      // near his den he comes charging out of it; anywhere else a cave bursts open in the ground
+      const D0 = BEARCAVE; HP.den = Math.hypot(HP.fishM.position.x - D0.x, HP.fishM.position.z - D0.z) < 45;
+      if (HP.den){ spawnHoneyBear(new V3(D0.x - 1, D0.y0, D0.z)); HP.pos.set(D0.x - 1, D0.y0, D0.z); HP.yaw = Math.PI / 2; bearDen.eyes.visible = false; }
+      else { const at = honeyCaveSpot(); HP.mouth = buildHoneyMouth(at); spawnHoneyBear(at); }
+      HP.phase = 'emerge'; HP.t = 0; SFX.breakRock(); SFX.thud && SFX.thud(20); player.shake = .8; toast('<b>Honey Pot</b> wants that fish. Shoot!'); }
     return;
   }
   const B = HP.bear; if (!B) return;
   const tp = player.pos, dx = tp.x - HP.pos.x, dz = tp.z - HP.pos.z, dist = Math.hypot(dx, dz), gy = terrainH(HP.pos.x, HP.pos.z);
   B.flash = Math.max(0, (B.flash || 0) - dt);
-  if (HP.phase === 'emerge'){
+  if (HP.phase === 'emerge' && HP.den){
+    // out of the den at a run, straight through the old planks across the mouth
+    const D0 = BEARCAVE, mx = D0.x + D0.rx, x0 = HP.pos.x; HP.pos.x = lerp(D0.x - 1, mx + 2.6, sm(clamp(HP.t / 1.5, 0, 1))); HP.pos.y = D0.y0; HP.pos.z = D0.z; HP.yaw = Math.PI / 2; B.act.timeScale = 1.2;
+    if (x0 < mx + .3 && HP.pos.x >= mx + .3){ SFX.breakRock(); SFX.thunk && SFX.thunk(); player.shake = Math.max(player.shake, .4); for (let i = 0; i < 4; i++) chips(new V3(mx + .4, D0.y0 + .4 + i * .35, D0.z + mr(-2, 2)), 4, 0x7a5434, new V3(1, .8, 0)); }
+    if (HP.t > .2 && !B.roared){ B.roared = true; SFX.roar(1); }
+    if (HP.t > 1.6){ HP.phase = 'chase'; HP.t = 0; }
+  } else if (HP.phase === 'emerge'){
     // the cave bursts open and the bear claws its way up out of it
     HP.mouth.scale.setScalar(Math.min(1, .01 + HP.t * 3));
     if (HP.t < .5 && Math.random() < .6){ const a = mr(0, 6.28), c = HP.mouth.position; chips(new V3(c.x + Math.cos(a) * 1.5, c.y + .3, c.z + Math.sin(a) * 1.5), 3, mpick([0x77726a, 0x6a4a2e]), new V3(Math.cos(a), 1.5, Math.sin(a))); }
@@ -7403,7 +7424,7 @@ function updatePeak(dt, t){
 }
 // ---- the bee farm and its honey stall are gone, colliders and all
 {
-  surface.remove(beeG);
+  surface.remove(beeG); surface.add(bearDen.g);
   const inYard = (x, z) => x < -33 && x > -51 && z > -7.5 && z < 6;
   for (let i = surfCircles.length - 1; i >= 0; i--) if (inYard(surfCircles[i].x, surfCircles[i].z)) surfCircles.splice(i, 1);
   for (let i = surfBoxes.length - 1; i >= 0; i--) if (inYard(surfBoxes[i].x, surfBoxes[i].z)) surfBoxes.splice(i, 1);
@@ -7411,7 +7432,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '83fa6859f248712d1e52c27f' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'adb043fb85d109f20db2b666' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

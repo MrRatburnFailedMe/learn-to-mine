@@ -2686,6 +2686,9 @@ const MDS = .5;
 const MSX = 1.9, MSY = 1.75;
 const MPROF = [[-2.6, -.7], [-3.15, 1.3], [-2.95, 3.5], [-1.95, 5.25], [0, 5.95], [1.95, 5.25], [2.95, 3.5], [3.15, 1.3], [2.6, -.7], [0, -.85]].map(([x, y]) => [x * MSX, y > 0 ? y * MSY : y]);
 const TUBE_HW = 2.6 * MSX, TUBE_ROOF = 5.5 * MSY, DECK_HW = 2.4;
+// half the tunnel's width at a height above the track (from the profile's right-hand side)
+const _MPR = MPROF.filter(([x, y]) => x > 0 || (x === 0 && y > 0)).sort((a, b) => a[1] - b[1]);
+function tubeHalfAt(up){ if (up <= _MPR[0][1]) return _MPR[0][0]; for (let i = 1; i < _MPR.length; i++){ const [x1, y1] = _MPR[i], [x0, y0] = _MPR[i - 1]; if (up <= y1) return x0 + (x1 - x0) * (up - y0) / (y1 - y0); } return 0; }
 const MMAT = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide });
 // each line has its own rock, so the mines under the camp, the badlands, the woods and the volcano never look alike
 const MPAL = {
@@ -2827,7 +2830,7 @@ function intrudes(a, b, c, d, pc){
     const arr = mine.hash.get((ix + x) * 100003 + iz + z); if (!arr) continue;
     for (const e of arr){
       if (e.pc === pc || e.pc.line !== pc.line || !e.pc.tubeM || (pc.prev && e.pc.prev === pc.prev && e.i * e.pc.ds < 12)) continue; const P = e.pc.P[e.i]; _ir.subVectors(m, P); if (_ir.lengthSq() > 64) continue;
-      const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (Math.abs(lat) < TUBE_HW - .8 && up > -1.2 && up < TUBE_ROOF - 1) return true;
+      const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (((e.pc.born || 0) < (pc.born || 1e9) ? up > -1.2 && Math.abs(lat) < tubeHalfAt(up) * .9 - .8 : up > -1 && up < 4.2 && Math.abs(lat) < 2.8)) return true;
     }
   }
   return false;
@@ -2943,9 +2946,10 @@ function clearOf(P, skip, rad = 15){
   return clearCount(P, skip, rad) === 0;
 }
 // ---------------------------------------------------------------- growing a line
+addPiece.n = 0;
 function addPiece(line, pc, parent, asAlt){
   if (parent){ if (asAlt) parent.alt = pc; else parent.next = pc; pc.prev = parent; }
-  mine.pieces.add(pc); if (!pc.surface) hashAdd(pc); mineG.add(pc.g);
+  pc.born = pc.born || ++addPiece.n; mine.pieces.add(pc); if (!pc.surface) hashAdd(pc); mineG.add(pc.g);
   return pc;
 }
 function setBlocks(st, P){ const d = new V3(); for (let j = 0; j < P.length; j += 2){ d.subVectors(P[j], st.p); if (d.lengthSq() > 100) continue; const al = d.dot(st.T), lat = d.dot(st.R), up = d.dot(st.U); if (Math.abs(al) > 1) continue;
@@ -7598,7 +7602,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'ec5fa0447a5c491e3f25ed3f' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '52c2ce270d41c9012c0dc544' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

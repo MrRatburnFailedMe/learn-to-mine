@@ -2759,16 +2759,17 @@ function cavMouth(c, m, near){
   for (const pc of near) for (let i = 0; i <= pc.n; i += 2){
     const P = pc.P[i], dx = m.x - P.x, dy = m.y - P.y, dz = m.z - P.z; if (dx * dx + dy * dy + dz * dz > 420) continue;
     const T = pc.T[i], R = pc.R[i], U = pc.U[i], a = dx * T.x + dy * T.y + dz * T.z, l = dx * R.x + dy * R.y + dz * R.z, u = dx * U.x + dy * U.y + dz * U.z;
-    if (Math.abs(a) < 3.2 && Math.abs(l) < TUBE_HW + 2.2 && u > -2.2 && u < TUBE_ROOF + 2.6){ const kk = cavK(c, P.x, P.y, P.z); if (kk > .8 && kk < 1.35) return true; }
+    if (Math.abs(a) < 2.6 && Math.abs(l) < TUBE_HW + .7 && u > -1.6 && u < TUBE_ROOF + .9){ const kk = cavK(c, P.x, P.y, P.z); if (kk > .92 && kk < 1.2){ const A = pc.P[Math.max(0, i - 8)], B = pc.P[Math.min(pc.n, i + 8)]; if ((cavK(c, A.x, A.y, A.z) - 1) * (cavK(c, B.x, B.y, B.z) - 1) < 0) return true; } }
   }
   return false;
 }
 function buildCavern(line, c){
   const pos = [], col = [], cc = new THREE.Color(), cc2 = new THREE.Color(), NU = 52, NV = 28, pal = c.pal, pts = [];
-  const near = [...mine.pieces].filter(o => o.line === line && !o.surface && o.c.distanceTo(c.c) < o.rad + Math.max(c.rx, c.ry, c.rz) * 1.3 + 4);
+  const nearNow = () => [...mine.pieces].filter(o => o.line === line && !o.surface && o.c.distanceTo(c.c) < o.rad + Math.max(c.rx, c.ry, c.rz) * 1.3 + 4); let near = nearNow();
   for (const pc of mine.pieces) if (pc.line === line) for (let i = 0; i <= pc.n; i += 2) pts.push(pc.P[i]);
   for (const p of c.extra || []) pts.push(p);
   const pt = (u, v) => { const th = u / NU * Math.PI * 2, ph = v / NV * Math.PI, n = 1 + (vn3(Math.cos(th) * 2 + c.c.x * .1, Math.cos(ph) * 2, Math.sin(th) * 2) - .5) * .35; return new V3(c.c.x + Math.cos(th) * Math.sin(ph) * c.rx * n, c.c.y + Math.cos(ph) * c.ry * n, c.c.z + Math.sin(th) * Math.sin(ph) * c.rz * n); };
+  const shellGeo = () => { const pos = [], col = [];
   for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++){
     const a = pt(u, v), b = pt(u + 1, v), d = pt(u, v + 1), e = pt(u + 1, v + 1);
     // the shell meets the floor with no gap under it
@@ -2780,7 +2781,9 @@ function buildCavern(line, c){
     if (pal.bands && Math.sin(m.y * 1.7) > .55) cc.set(pal.bands[Math.floor(m.y * 3) & 1]).multiplyScalar(.9);
     pushQuad(pos, col, a, b, e, d, cc);
   }
-  const g = new THREE.Group(); g.add(new THREE.Mesh(geoFrom(pos, col), MMAT));
+  return geoFrom(pos, col); };
+  const g = new THREE.Group(); g.add(new THREE.Mesh(shellGeo(), MMAT));
+  c.reshell = () => { near = nearNow(); const m = g.children[0]; m.geometry.dispose(); m.geometry = shellGeo(); };
   if (c.floorY !== undefined){
     const ring = [], NA = 48; for (let k = 0; k < NA; k++){ const an = k / NA * Math.PI * 2, ca = Math.cos(an), sa = Math.sin(an); let r = 0; while (r < 90 && inCav(c, { x: c.c.x + ca * r, y: c.floorY + .05, z: c.c.z + sa * r }, 1)) r += .5; ring.push([ca * (r + .7), sa * (r + .7)]); }
     const fp = []; for (let k = 0; k < NA; k++){ const A = ring[k], B = ring[(k + 1) % NA]; fp.push(0, 0, 0, B[0], 0, B[1], A[0], 0, A[1]); }
@@ -2830,7 +2833,8 @@ function intrudes(a, b, c, d, pc){
     const arr = mine.hash.get((ix + x) * 100003 + iz + z); if (!arr) continue;
     for (const e of arr){
       if (e.pc === pc || e.pc.line !== pc.line || !e.pc.tubeM || (pc.prev && e.pc.prev === pc.prev && e.i * e.pc.ds < 12)) continue; const P = e.pc.P[e.i]; _ir.subVectors(m, P); if (_ir.lengthSq() > 64) continue;
-      const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (((e.pc.born || 0) < (pc.born || 1e9) ? up > -1.2 && Math.abs(lat) < tubeHalfAt(up) * .9 - .8 : up > -1 && up < 4.2 && Math.abs(lat) < 2.8)) return true;
+      if ((e.pc.born || 0) < (pc.born || 1e9)){ if (Math.abs(_ir.dot(e.pc.T[e.i])) > 1.6) continue; const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (up > -1.2 && Math.abs(lat) < tubeHalfAt(up) * .9 - .8) return true; _ir.subVectors(m, P); }
+      for (const q of [m, a, b, c, d]){ _ir.subVectors(q, P); if (Math.abs(_ir.dot(e.pc.T[e.i])) > 1.2) continue; const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (up > -1 && up < 4.2 && Math.abs(lat) < 2.8) return true; }
     }
   }
   return false;
@@ -2843,7 +2847,7 @@ function buildTube(pc){
   const pos = [], col = [], c = new THREE.Color(), pal = pc.pal, line = pc.line;
   let prev = null, prevIn = true, prevK = 0, first = null;
   for (let i = 0; i <= pc.n; i += 3){
-    const k = Math.min(i, pc.n), p = pc.P[k], inside = line.cavs.some(cv => inCav(cv, p, 1));
+    const k = Math.min(i, pc.n), p = pc.P[k], inside = line.cavs.some(cv => inCav(cv, p, .9));
     const s = k * pc.ds + pc.d0, sx = pc.squeeze ? lerp(.42, 1, smooth(0, 16, s)) : 1, sy = pc.squeeze ? lerp(.5, 1, smooth(0, 16, s)) : 1;
     const ring = MPROF.map(([lx, ly], q) => { const wall = ly > -.5, j = wall ? 1 + .16 * (hash3(Math.round(p.x * 2), Math.round(p.y * 2) + q * 7, Math.round(p.z * 2)) - .5) : 1; return p.clone().addScaledVector(pc.R[k], lx * sx * j).addScaledVector(pc.U[k], ly * (ly > 0 ? sy : 1)); });
     if (prev && !inside && !prevIn) for (let q = 0; q < MPROF.length; q++){
@@ -2931,14 +2935,15 @@ function wpick(list, rng){ let tot = 0; for (const [, w] of list) tot += w; let 
 // how many points of a path run into the tunnels already there (stops counting past `stop`)
 function clearCount(P, skip, rad = 15, stop = 0){
   const fam = pc => pc === skip || (skip && (pc === skip.prev || pc.prev === skip));
-  let n = 0;
+  let n = 0; const own = mine.line.cavs.filter(c => skip && (skip.cav === c || (skip.prev && skip.prev.kind === 'fork' && inCav(c, skip.P[0], 1.2))));
   for (let i = 0; i < P.length; i += 4){ const near = P[i].distanceToSquared(P[0]) < (rad + 3) ** 2;
-    if (!near && mine.line.cavs.some(c => inCav(c, P[i], 1.15))){ if (++n > stop) return n; continue; }
+    // keep out of other caverns and their rock shell; and once well clear of the cavern it starts in, don't swing back through it
+    if (mine.line.cavs.some(c => own.includes(c) ? P[i].distanceToSquared(P[0]) > 625 && inCav(c, P[i], 1.3) : inCav(c, P[i], 1.45))){ if (++n > stop) return n; continue; }
     for (const pc of mine.pieces){
       if (pc.surface || pc.line !== mine.line || (near ? fam(pc) : pc === skip)) continue; const r = near ? 9 : rad;
       if (pc.c.distanceToSquared(P[i]) > (pc.rad + r) ** 2) continue;
-      let hit = false; for (let j = 0; j <= pc.n; j += 4) if (pc.P[j].distanceToSquared(P[i]) < r * r){ hit = true; break; }
-      if (hit){ if (++n > stop) return n; break; }
+      let hit = 0; for (let j = 0; j <= pc.n; j += 2){ const d2 = pc.P[j].distanceToSquared(P[i]); if (d2 < 30){ hit = 10; break; } if (d2 < r * r) hit = 1; }
+      if (hit){ n += hit; if (n > stop) return n; break; }
     } }
   return n;
 }
@@ -2960,6 +2965,7 @@ function pruneSets(pc){
 const END_CAP = new THREE.MeshBasicMaterial({ color: 0x07080a, side: THREE.DoubleSide });
 function finishPiece(pc){ if (!pc.noTube) buildTube(pc); railsFor(pc); if (!pc.noTube) dressTube(pc);
   pruneSets(pc);
+  for (const cv of pc.line.cavs) if (cv.reshell && cv !== pc.cav && pc.P.some((q, j) => j % 3 === 0 && (k => k > .75 && k < 1.4)(cavK(cv, q.x, q.y, q.z)))) cv.reshell();
   if (pc.prev && pc.prev.cap){ pc.prev.g.remove(pc.prev.cap); pc.prev.cap.geometry.dispose(); pc.prev.cap = null; }
   if (!pc.noTube && !pc.surface && !pc.end){ const e = pc.P[pc.n], c0 = e.clone().addScaledVector(pc.U[pc.n], 2.5), ring = MPROF.map(([lx, ly]) => e.clone().addScaledVector(pc.R[pc.n], lx * 1.15).addScaledVector(pc.U[pc.n], ly * 1.15)).map(p => p.addScaledVector(pc.T[pc.n], .6)), v = [];
     for (let q = 0; q < ring.length; q++){ const a = ring[q], b = ring[(q + 1) % ring.length]; v.push(c0.x, c0.y, c0.z, a.x, a.y, a.z, b.x, b.y, b.z); }
@@ -2973,19 +2979,23 @@ function grow(line, tip0){
   line.since = (line.since || 0) + 1; line.dist = (line.dist || 0) + tip0.len;
   // set pieces come round every few pieces; forks often; a lift up to the station now and then
   let kind = 'plain';
-  if (line.since >= 2 && rng() < .6){ kind = wpick([['fork', 6], ['lava', 2], ['chasm', 1.5], ['boulder', 1.3], ['loop', .22], ['helix', 1], ['crystal', 1.1], ['falls', (line.dist || 0) - (line.lastFalls ?? -1e9) > 700 ? .5 : 0]], rng); line.since = 0; if (kind === 'falls') line.lastFalls = line.dist || 0; }
+  if (line.since >= 2 && rng() < .6){ kind = wpick([['fork', 6], ['lava', 2], ['chasm', 1.5], ['loop', .22], ['helix', 1], ['crystal', 1.1], ['falls', (line.dist || 0) - (line.lastFalls ?? -1e9) > 700 ? .5 : 0]], rng); line.since = 0; if (kind === 'falls') line.lastFalls = line.dist || 0; }
   if (line.force && tip0.kind !== 'boulder'){ kind = line.force.shift(); if (!line.force.length) line.force = null; }
   if (tip0.kind === 'boulder') kind = 'hardturn';
   const pc = SET[kind] ? SET[kind](line, tip, tip0) : null;
   if (pc) return pc;
-  for (let tries = 0; tries < 12; tries++){
+  for (let tries = 0; tries < 26; tries++){
     const type = kind === 'hardturn' ? 'turn' : wpick(SHAPES, rng), sp = shapeSpec(type, rng, tip, line);
+    if (tries >= 12){ const Y = (rng() < .5 ? -1 : 1) * (.5 + rng() * 1.1), L = 24 + rng() * 14, PE = (tries % 2 ? -1 : 1) * (.18 + rng() * .2); sp.L = L; sp.yaw = t => Y / L * Math.sin(Math.PI * t) * Math.PI / 2; sp.pitch = t => lerp(tip.pitch, PE, sm(Math.min(1, t * 2))) * (t > .7 ? 1 - sm((t - .7) / .3) * .6 : 1); }
     if (kind === 'hardturn'){ const Y = (rng() < .5 ? -1 : 1) * 1.3, L = 24; sp.L = L; sp.yaw = t => Y / L * Math.sin(Math.PI * t) * Math.PI / 2; }
     let path = integ(tip, sp.L, sp.yaw, sp.pitch), ty = type;
-    const bad = clearCount(path.P, tip0, tries < 6 ? 15 : 11, 99);
-    if (bad && (!line._best || bad < line._best.bad)) line._best = { bad, path, type };
-    if (bad && tries < 11) continue;
-    if (bad){ path = line._best.path; ty = line._best.type; } line._best = null;
+    // score it: what it runs into, and (so the line doesn't steer itself into a corner) whether it ends near a cavern or other track
+    const bad = clearCount(path.P, tip0, tries < 6 ? 15 : 11, 99), E = path.P[path.P.length - 1];
+    const endPen = mine.line.cavs.filter(c => inCav(c, E, 2)).length * 5 + ([...mine.pieces].some(q => q.line === line && q !== tip0 && !q.surface && q.P.some((r, j) => j % 6 === 0 && r.distanceToSquared(E) < 400)) ? 3 : 0);
+    const score = bad * 100 + endPen;
+    if (!line._best || score < line._best.score) line._best = { score, path, type };
+    if (score && tries < 25) continue;
+    path = line._best.path; ty = line._best.type; line._best = null;
     const p = newPiece(line, path.P, ty, { ds: path.ds }); if (rng() < .18) p.dark = true; if (line.pal === MPAL.camp && rng() < .2) p.crystal = true;
     addPiece(line, p, tip0); finishPiece(p); return p;
   }
@@ -2994,13 +3004,13 @@ function grow(line, tip0){
 const SET = {};
 // a fork: the line splits left and right in a cavern; lean A or D on the way in to pick your track
 SET.fork = (line, tip, tip0) => {
-  const rng = line.rng, N = +wpick([['1', 1.5], ['2', 4], ['3', 2.6], ['4', 1]], rng), big = N >= 3;
+  const rng = line.rng, N = +wpick([['1', 1.5], ['2', 4], ['3', 2.2]], rng), big = N >= 3;
   const path = integ(tip, 22, () => 0, t => lerp(tip.pitch, 0, sm(t)));
   if (!clearOf(path.P, tip0, big ? 26 : 20)) return null;
   const pc = newPiece(line, path.P, 'fork', { ds: path.ds }); addPiece(line, pc, tip0);
   const et = tipOf(pc), split = path.P[path.n], fwd = new V3(-Math.sin(et.yaw), 0, -Math.cos(et.yaw)), L = big ? 48 : 40;
   // how hard each track swings away (left to right), and whether it dives, climbs or runs level once it's out of the cavern
-  const spread = N === 1 ? [(rng() - .5) * 1.4] : N === 2 ? [.62, -.62] : N === 3 ? [1, 0, -1] : [1.2, .42, -.42, -1.2];
+  const spread = N === 1 ? [(rng() - .5) * 1.4] : N === 2 ? [.8, -.8] : N === 3 ? [1.25, 0, -1.25] : [1.5, .5, -.5, -1.5];
   const dips = [-.17, -.09, -.03, .05].sort(() => rng() - .5);
   const brPath = (Y, k, m) => integ(et, L, t => Y * m / L * 2 * (1 - t), t => dips[k] * sm(clamp((t - .5) / .5, 0, 1)));
   let mul = 1; const okFor = m => spread.every((Y, k) => clearCount(brPath(Y, k, m).P, pc, 12) === 0);
@@ -3239,6 +3249,7 @@ function dropCav(line, c){ for (const l of c.lamps || []) removeLamp(l); c.g.par
 function disposePiece(pc){
   if (!mine.pieces.has(pc)) return;
   mine.pieces.delete(pc); hashDel(pc); pc.g.parent && pc.g.parent.remove(pc.g);
+  if (!mine.resetting) for (const o of mine.pieces){ if (!o.tubeM || o.line !== pc.line || o.c.distanceTo(pc.c) > o.rad + pc.rad + 8) continue; if (o.P.some((q, j) => j % 4 === 0 && pc.P.some((r, k) => k % 4 === 0 && q.distanceToSquared(r) < 196))) buildTube(o); }
   pc.g.traverse(o => { if (o.isMesh && o.geometry !== VG.cry) o.geometry.dispose(); });
   for (const l of pc.lamps) removeLamp(l);
   for (let i = LAVA_FX.length; i--;) if (LAVA_FX[i].parent === pc.g) LAVA_FX.splice(i, 1);
@@ -7602,7 +7613,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '52c2ce270d41c9012c0dc544' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'ff9d82489d9d4b449d6f57fc' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

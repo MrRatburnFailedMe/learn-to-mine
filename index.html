@@ -1334,19 +1334,25 @@ class Tunnel {
   }
 }
 // rails + sleepers along a framed path (shared with the minecart track)
+// one rail: a bar 7 cm wide and 10 cm tall swept smoothly along the track frames
+function railBar(F, sd){
+  const pos = [], col = [], ring = f => { const c = f.p.clone().addScaledVector(f.R, sd).addScaledVector(f.U, .12); return [[-.035, -.05], [.035, -.05], [.035, .05], [-.035, .05]].map(([x, y]) => c.clone().addScaledVector(f.R, x).addScaledVector(f.U, y)); };
+  let prev = ring(F[0]); const cc = new THREE.Color(0x8a8580), top = new THREE.Color(0xb8b4ae);
+  for (let i = 1; i < F.length; i++){ const cur = ring(F[i]);
+    for (let s = 0; s < 4; s++){ const s1 = (s + 1) % 4, a = prev[s], b = prev[s1], c = cur[s1], d = cur[s]; for (const v of [a, c, b, a, d, c]) pos.push(v.x, v.y, v.z); const k = s === 2 ? top : cc; for (let j = 0; j < 6; j++) col.push(k.r, k.g, k.b); }
+    prev = cur; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+}
 function buildRails(F, parent, every = .75){
   const geos = [], q = new THREE.Quaternion(), m = new THREE.Matrix4(), fw = new V3();
   let acc = every;
   for (let i = 0; i < F.length - 1; i++){
     const a = F[i], b = F[i + 1]; fw.subVectors(b.p, a.p); const len = fw.length(); fw.normalize();
     m.makeBasis(a.R, a.U, fw.clone().negate()); q.setFromRotationMatrix(m);
-    for (const sd of [-.55, .55]){
-      const c = a.p.clone().lerp(b.p, .5).addScaledVector(a.R, sd).addScaledVector(a.U, .12);
-      geos.push(boxGeo(.07, .1, len + .02, c.x, c.y, c.z, 0x8a8580, 0, q));
-    }
     acc += len;
     if (acc >= every){ acc = 0; const c = a.p.clone().addScaledVector(a.U, .03); geos.push(boxGeo(1.55, .08, .24, c.x, c.y, c.z, 0x5a3f28, 0, q)); }
   }
+  for (const sd of [-.55, .55]) geos.push(railBar(F, sd));
   return mergedMesh(geos, parent);
 }
 const tunnels = TSAMP.map(ts => new Tunnel(ts));
@@ -7592,7 +7598,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'f2a12c30717f85551c3cc8e1' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'ec5fa0447a5c491e3f25ed3f' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

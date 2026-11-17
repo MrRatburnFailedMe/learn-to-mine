@@ -2919,12 +2919,22 @@ function shapeSpec(type, rng, tip, line){
 }
 const SHAPES = [['straight', 1.4], ['turn', 3], ['scurve', 1.7], ['hills', 1.5], ['drop', 1.3], ['climb', 1.2], ['plunge', 1], ['zigzag', 1.3], ['hairpin', .7], ['swoop', 1.5], ['camel', 1]];
 function wpick(list, rng){ let tot = 0; for (const [, w] of list) tot += w; let x = rng() * tot; for (const [k, w] of list){ x -= w; if (x <= 0) return k; } return list[0][0]; }
+// how many points of a path run into the tunnels already there (stops counting past `stop`)
+function clearCount(P, skip, rad = 15, stop = 0){
+  const fam = pc => pc === skip || (skip && (pc === skip.prev || pc.prev === skip));
+  let n = 0;
+  for (let i = 0; i < P.length; i += 4){ const near = P[i].distanceToSquared(P[0]) < (rad + 3) ** 2;
+    if (!near && mine.line.cavs.some(c => inCav(c, P[i], 1.15))){ if (++n > stop) return n; continue; }
+    for (const pc of mine.pieces){
+      if (pc.surface || pc.line !== mine.line || (near ? fam(pc) : pc === skip)) continue; const r = near ? 9 : rad;
+      if (pc.c.distanceToSquared(P[i]) > (pc.rad + r) ** 2) continue;
+      let hit = false; for (let j = 0; j <= pc.n; j += 4) if (pc.P[j].distanceToSquared(P[i]) < r * r){ hit = true; break; }
+      if (hit){ if (++n > stop) return n; break; }
+    } }
+  return n;
+}
 function clearOf(P, skip, rad = 15){
-  for (let i = 0; i < P.length; i += 4){ if (P[i].distanceToSquared(P[0]) < (rad + 3) ** 2) continue; for (const c of mine.line.cavs) if (inCav(c, P[i], 1.15)) return false; for (const pc of mine.pieces){
-    if (pc === skip || pc.surface || pc.line !== mine.line) continue; if (pc.c.distanceToSquared(P[i]) > (pc.rad + rad) ** 2) continue;
-    for (let j = 0; j <= pc.n; j += 4) if (pc.P[j].distanceToSquared(P[i]) < rad * rad) return false;
-  } }
-  return true;
+  return clearCount(P, skip, rad) === 0;
 }
 // ---------------------------------------------------------------- growing a line
 function addPiece(line, pc, parent, asAlt){
@@ -2961,9 +2971,12 @@ function grow(line, tip0){
   for (let tries = 0; tries < 12; tries++){
     const type = kind === 'hardturn' ? 'turn' : wpick(SHAPES, rng), sp = shapeSpec(type, rng, tip, line);
     if (kind === 'hardturn'){ const Y = (rng() < .5 ? -1 : 1) * 1.3, L = 24; sp.L = L; sp.yaw = t => Y / L * Math.sin(Math.PI * t) * Math.PI / 2; }
-    const path = integ(tip, sp.L, sp.yaw, sp.pitch);
-    if (tries < 11 && !clearOf(path.P, tip0, tries < 6 ? 15 : 11)) continue;
-    const p = newPiece(line, path.P, type, { ds: path.ds }); if (rng() < .18) p.dark = true; if (line.pal === MPAL.camp && rng() < .2) p.crystal = true;
+    let path = integ(tip, sp.L, sp.yaw, sp.pitch), ty = type;
+    const bad = clearCount(path.P, tip0, tries < 6 ? 15 : 11, 99);
+    if (bad && (!line._best || bad < line._best.bad)) line._best = { bad, path, type };
+    if (bad && tries < 11) continue;
+    if (bad){ path = line._best.path; ty = line._best.type; } line._best = null;
+    const p = newPiece(line, path.P, ty, { ds: path.ds }); if (rng() < .18) p.dark = true; if (line.pal === MPAL.camp && rng() < .2) p.crystal = true;
     addPiece(line, p, tip0); finishPiece(p); return p;
   }
 }
@@ -2979,7 +2992,10 @@ SET.fork = (line, tip, tip0) => {
   // how hard each track swings away (left to right), and whether it dives, climbs or runs level once it's out of the cavern
   const spread = N === 1 ? [(rng() - .5) * 1.4] : N === 2 ? [.62, -.62] : N === 3 ? [1, 0, -1] : [1.2, .42, -.42, -1.2];
   const dips = [-.17, -.09, -.03, .05].sort(() => rng() - .5);
-  pc.br = spread.map((Y, k) => { const pe = dips[k], bp = integ(et, L, t => Y / L * 2 * (1 - t), t => pe * sm(clamp((t - .5) / .5, 0, 1))), b = newPiece(line, bp.P, 'plain', { ds: bp.ds }); addPiece(line, b, null); b.prev = pc; return b; });
+  const brPath = (Y, k, m) => integ(et, L, t => Y * m / L * 2 * (1 - t), t => dips[k] * sm(clamp((t - .5) / .5, 0, 1)));
+  let mul = 1; const okFor = m => spread.every((Y, k) => clearCount(brPath(Y, k, m).P, pc, 12) === 0);
+  if (!okFor(1)){ if (okFor(.55)) mul = .55; else if (N > 1 && okFor(-1)) mul = -1; else { mine.pieces.delete(pc); hashDel(pc); mineG.remove(pc.g); tip0.next = null; return null; } }
+  pc.br = spread.map((Y, k) => { const bp = brPath(Y, k, mul), b = newPiece(line, bp.P, 'plain', { ds: bp.ds }); addPiece(line, b, null); b.prev = pc; return b; });
   pc.next = pc.br[0]; pc.alt = pc.br[1] || null;
   const cr = N === 1 ? 17 : big ? 27 : 21;
   line.cavs.push(buildCavern(line, { c: split.clone().addScaledVector(fwd, N === 1 ? 6 : big ? 12 : 9).add(new V3(0, 4, 0)), rx: cr, ry: big ? 12 : 10, rz: cr, floorY: split.y - .8, pal: line.pal, deco: true }));
@@ -7576,7 +7592,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '41957396a1c3a39260887e27' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'f2a12c30717f85551c3cc8e1' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

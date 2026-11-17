@@ -2820,7 +2820,7 @@ function intrudes(a, b, c, d, pc){
   for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++){
     const arr = mine.hash.get((ix + x) * 100003 + iz + z); if (!arr) continue;
     for (const e of arr){
-      if (e.pc === pc || e.pc.line !== pc.line || !e.pc.tubeM) continue; const P = e.pc.P[e.i]; _ir.subVectors(m, P); if (_ir.lengthSq() > 64) continue;
+      if (e.pc === pc || e.pc.line !== pc.line || !e.pc.tubeM || (pc.prev && e.pc.prev === pc.prev && e.i * e.pc.ds < 12)) continue; const P = e.pc.P[e.i]; _ir.subVectors(m, P); if (_ir.lengthSq() > 64) continue;
       const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (Math.abs(lat) < TUBE_HW - .8 && up > -1.2 && up < TUBE_ROOF - 1) return true;
     }
   }
@@ -2945,7 +2945,7 @@ function finishPiece(pc){ if (!pc.noTube) buildTube(pc); railsFor(pc); if (!pc.n
     for (let q = 0; q < ring.length; q++){ const a = ring[q], b = ring[(q + 1) % ring.length]; v.push(c0.x, c0.y, c0.z, a.x, a.y, a.z, b.x, b.y, b.z); }
     const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); pc.cap = new THREE.Mesh(gg, END_CAP); pc.g.add(pc.cap); }
   for (const L of Object.values(LINES)) for (const c of L.cavs) if (c.stal) for (let i = c.stal.length - 1; i >= 0; i--){ const st = c.stal[i]; if (pc.P.some((q, j) => j % 2 === 0 && (q.x - st.x) ** 2 + (q.z - st.z) ** 2 < 40 && q.y < st.top && st.top - q.y < 12)){ st.sg.parent && st.sg.parent.remove(st.sg); c.stal.splice(i, 1); } }
-  for (const o of mine.pieces){ if (o === pc || !o.tubeM || o.line !== pc.line || o === pc.prev || o.prev === pc || (pc.prev && o.prev === pc.prev) || o.c.distanceTo(pc.c) > o.rad + pc.rad + 8) continue; if (o.P.some((q, j) => j % 4 === 0 && pc.P.some((r, k) => k % 4 === 0 && q.distanceToSquared(r) < 81))) buildTube(o); } pc.g.traverse(o => { if (o.isMesh){ o.castShadow = false; o.receiveShadow = true; } }); }
+  for (const o of mine.pieces){ if (o === pc || !o.tubeM || o.line !== pc.line || o === pc.prev || o.prev === pc || o.c.distanceTo(pc.c) > o.rad + pc.rad + 8) continue; if (o.P.some((q, j) => j % 4 === 0 && pc.P.some((r, k) => k % 4 === 0 && q.distanceToSquared(r) < 196))) buildTube(o); } pc.g.traverse(o => { if (o.isMesh){ o.castShadow = false; o.receiveShadow = true; } }); }
 function grow(line, tip0){
   if (DEMO && tip0.end) return null;
   if (DEMO && (line.dist || 0) + tip0.len > 300 && !tip0.perm) return demoEnd(line, tip0);
@@ -2958,11 +2958,11 @@ function grow(line, tip0){
   if (tip0.kind === 'boulder') kind = 'hardturn';
   const pc = SET[kind] ? SET[kind](line, tip, tip0) : null;
   if (pc) return pc;
-  for (let tries = 0; tries < 6; tries++){
+  for (let tries = 0; tries < 12; tries++){
     const type = kind === 'hardturn' ? 'turn' : wpick(SHAPES, rng), sp = shapeSpec(type, rng, tip, line);
     if (kind === 'hardturn'){ const Y = (rng() < .5 ? -1 : 1) * 1.3, L = 24; sp.L = L; sp.yaw = t => Y / L * Math.sin(Math.PI * t) * Math.PI / 2; }
     const path = integ(tip, sp.L, sp.yaw, sp.pitch);
-    if (tries < 5 && !clearOf(path.P, tip0)) continue;
+    if (tries < 11 && !clearOf(path.P, tip0, tries < 6 ? 15 : 11)) continue;
     const p = newPiece(line, path.P, type, { ds: path.ds }); if (rng() < .18) p.dark = true; if (line.pal === MPAL.camp && rng() < .2) p.crystal = true;
     addPiece(line, p, tip0); finishPiece(p); return p;
   }
@@ -7561,7 +7561,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: 'd79f8eb52b6b8f7af9e1469b' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '8dd20e83d6193185a3c5c103' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

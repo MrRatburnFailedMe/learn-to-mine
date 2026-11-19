@@ -2858,6 +2858,7 @@ function cavAt(line, p){ for (const c of line.cavs) if (inCav(c, p, .93)) return
 const _iq = new V3(), _ir = new V3();
 function intrudes(a, b, c, d, pc){
   const m = _iq.copy(a).add(b).add(c).add(d).multiplyScalar(.25), ix = Math.floor(m.x / MH), iz = Math.floor(m.z / MH);
+  if (pc.line && pc.line.cavs.some(cv => inCav(cv, m, .93))) return true;
   for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++){
     const arr = mine.hash.get((ix + x) * 100003 + iz + z); if (!arr) continue;
     for (const e of arr){
@@ -2869,7 +2870,7 @@ function intrudes(a, b, c, d, pc){
   return false;
 }
 function tubeCollar(pos, col, ring, pc, k, dir){
-  const c = pc.P[k].clone().addScaledVector(pc.U[k], 4.4), cc = new THREE.Color(), out = ring.map(p => p.clone().sub(c).multiplyScalar(2.5).add(c).addScaledVector(pc.T[k], dir * 2.4));
+  const c = pc.P[k].clone().addScaledVector(pc.U[k], 4.4), cc = new THREE.Color(), out = ring.map(p => p.clone().sub(c).multiplyScalar(pc.kind === 'loop' || pc.kind === 'helix' ? 1.3 : 2.5).add(c).addScaledVector(pc.T[k], dir * (pc.kind === 'loop' || pc.kind === 'helix' ? .7 : 2.4)));
   for (let q = 0; q < ring.length; q++){ const q1 = (q + 1) % ring.length; cc.set(q >= 8 ? pc.pal.floor : pc.pal.rock[q % 3]).multiplyScalar(.82 + Math.random() * .14); pushQuad(pos, col, ring[q], out[q], out[q1], ring[q1], cc); }
 }
 function buildTube(pc){
@@ -7705,7 +7706,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '0f95e9c1de2bf4aa942809da' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '205914e6b44b8c109471a259' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }

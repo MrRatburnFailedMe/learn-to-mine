@@ -578,6 +578,10 @@ const NUGGET = { coal: [0x2c2c30, .1, .8], copper: [0xd0763a, .55, .45], iron: [
 const NUG_D = {}, DEMO_NUG = { copper: 0xff7424, iron: 0xd8653e, steel: 0x7fd4ff, gold: 0xffc81e, fool: 0xffd040, sulfur: 0xfff03a, gem: 0xb04cff, coal: 0x2a2a34 };
 function demoNug(type, c, mt, rg){ const col = new THREE.Color(DEMO_NUG[type] ?? c); return MS(col.getHex(), { metalness: Math.min(mt, .45), roughness: rg, emissive: col.clone().multiplyScalar(type === 'coal' ? 0 : .3) }); }
 function oreMesh(type){
+  if (type === 'bullets'){ const g = new THREE.Group(), w = M(0x7a5232), br = MS(0xd8a640, { metalness: .9, roughness: .3 }), cu = MS(0xb86a3a, { metalness: .8, roughness: .35 });
+    mk(new THREE.BoxGeometry(.34, .14, .24), w, g, 0, -.03, 0); for (let i = 0; i < 9; i++){ const x = (i % 3 - 1) * .09, z = (Math.floor(i / 3) - 1) * .065; mk(new THREE.CylinderGeometry(.018, .018, .12, 6), br, g, x, .08, z); mk(new THREE.ConeGeometry(.018, .04, 6), cu, g, x, .16, z); } return g; }
+  if (type === 'liquor'){ const g = new THREE.Group(), gl = MS(0x8a4a14, { roughness: .1, metalness: .1, emissive: 0x1a0800 });
+    mk(new THREE.CylinderGeometry(.07, .075, .26, 8), gl, g, 0, 0, 0); mk(new THREE.CylinderGeometry(.025, .035, .1, 6), gl, g, 0, .18, 0); mk(new THREE.CylinderGeometry(.022, .022, .04, 6), M(0xc8a070), g, 0, .245, 0); mk(new THREE.CylinderGeometry(.072, .072, .09, 8), M(0xf0e0b8), g, 0, -.01, 0); return g; }
   const [c, mt, rg] = NUGGET[type] || [ORES[type] ? ORES[type].chip : 0x999999, .2, .6], g = new THREE.Group();
   const mat = NUG_M[type] || (NUG_M[type] = MS(c, { metalness: mt, roughness: rg }));
   const m = mk(lowpoly(new THREE.IcosahedronGeometry(.15, 1), .035), mat, g); m.scale.set(1.2, .82, 1); m.castShadow = true;
@@ -654,7 +658,7 @@ const TOOL_ROT = { pick: 0, axe: Math.PI / 2, sledge: Math.PI / 2 };
 function toolModel(k, steel){ const g = new THREE.Group(), m = new THREE.Mesh(TOOL_GEO[k], steel ? TOOL_MAT_STEEL : TOOL_MAT); m.rotation.y = TOOL_ROT[k]; m.castShadow = true; g.add(m); return g; }
 // how hard each one bites rock (r = radius, pow = how much), how hard it hits a boss, and how long a swing takes
 const TOOLS = {
-  hand: { r: .55, pow: .35, vein: .25, dmg: 8, dur: .42 },
+  hand: { r: .55, pow: .35, vein: .25, dmg: 15, dur: .42 },
   pick: { r: 1.18, pow: 1.8, vein: 1, dmg: 34, dur: .72 },
   axe: { r: 1.0, pow: 1.4, vein: .8, dmg: 58, dur: .6 },
   sledge: { r: 1.75, pow: 3.4, vein: 1.5, dmg: 85, dur: 1.05 },
@@ -2248,6 +2252,7 @@ vm.tools.pan.scale.setScalar(.72); vm.tools.drill.position.set(.02, .12, -.04); 
 for (const k in vm.tools){ const t = vm.tools[k]; t.visible = false; vm.right.add(t); t.traverse(o => o.castShadow = false); }
 vm.tools.pick1.position.y = vm.tools.pick2.position.y = -.08; vm.tools.pick1.scale.setScalar(.88); vm.tools.pick2.scale.setScalar(.88);
 const vmHand = new THREE.Group(); vm.right.add(vmHand); handMesh(vmHand, 0, 0, 0);
+const vmFistL = new THREE.Group(); vm.root.add(vmFistL); handMesh(vmFistL, 0, 0, 0); vmFistL.visible = false;
 const vmLantern = modelLantern(true); vmLantern.position.y = -.27; const lanternPivot = new THREE.Group(); lanternPivot.add(vmLantern); vm.left.add(lanternPivot);
 mk(new THREE.BoxGeometry(.085, .1, .1), SKIN, vm.left, 0, .02, 0);
 const panWater = new THREE.Mesh(new THREE.CircleGeometry(.2, 12), new THREE.MeshLambertMaterial({ color: 0x6aa9c9, transparent: true, opacity: .8 })); panWater.rotation.x = -Math.PI / 2; panWater.position.y = .04; panWater.visible = false; vm.tools.pan.add(panWater);
@@ -2283,7 +2288,8 @@ REST.hand = { p: [.28, -.32, -.5], r: [.25, -.1, -.25] };
 SWINGS.axe = SWINGS.pick; SWINGS.sledge = SWINGS.pick;
 SWINGS.hand = [
   { hit: .45, k: [[0, 0, 0, 0, 0, 0, 0], [.22, .03, -.03, .1, .1, 0, 0], [.45, -.1, .06, -.36, -.05, 0, 0], [.6, -.09, .05, -.32, -.05, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  { hit: .45, k: [[0, 0, 0, 0, 0, 0, 0], [.22, .06, -.05, .08, .1, .2, .2], [.45, -.14, .05, -.34, -.08, -.2, -.1], [.6, -.12, .04, -.3, -.06, -.2, -.1], [1, 0, 0, 0, 0, 0, 0]] },
+  // the left jab: the right fist stays put (the left one moves; see vmFistL)
+  { hit: .45, k: [[0, 0, 0, 0, 0, 0, 0], [.45, .02, -.02, .04, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
 ];
 vm.tools.axe = toolModel('axe'); vm.tools.sledge = toolModel('sledge');
 for (const k of ['axe', 'sledge']){ const t = vm.tools[k]; t.visible = false; vm.right.add(t); t.traverse(o => o.castShadow = false); t.position.y = -.08; t.scale.setScalar(k === 'sledge' ? .82 : .9); }
@@ -2318,7 +2324,10 @@ function updateVM(dt, moving){
   vm.right.position.set(rest.p[0] + d[0] + bx + vm.sway.x, rest.p[1] + d[1] + by - vm.stow * 1.1 + vm.sway.y, rest.p[2] + d[2]);
   vm.right.rotation.set(rest.r[0] + d[3], rest.r[1] + d[4], rest.r[2] + d[5]);
   vm.lanK = vm.lanK ?? 1; vm.lanK += ((state.owned.lantern && state.lanternOn && !state.pan ? 1 : 0) - vm.lanK) * Math.min(1, dt * 9);
-  vm.left.visible = state.owned.lantern && vm.lanK > .02;
+  vm.left.visible = state.owned.lantern && vm.lanK > .02 && toolKind() !== 'hand';
+  { const S2 = state.swing, jab = S2 && toolKind() === 'hand' && S2.def === SWINGS.hand[1] ? Math.sin(clamp(S2.t / S2.dur, 0, 1) * Math.PI) : 0;
+    vmFistL.visible = toolKind() === 'hand' && !state.riding && !state.carrying;
+    vmFistL.position.set(-.3 + bx + vm.sway.x + jab * .14, -.3 + by + vm.sway.y + jab * .08, -.5 - jab * .34); vmFistL.rotation.set(.25 - jab * .3, .1, .25); }
   vm.left.position.set(-.42 + bx * 1.2 + vm.sway.x - (1 - vm.lanK) * .2, -.13 + by * 1.3 + vm.sway.y - (1 - vm.lanK) * .8, -.85);
   // the throw wind-up: the thing you're holding draws back over your shoulder
   if (state.qHold != null && state.carrying){ state.qHold = Math.min(state.qHold + dt, QMAX + .4); const k = clamp((state.qHold - .1) / QMAX, 0, 1), qb = $('qbar'); if (state.qHold > .18){ qb.style.display = 'block'; qb.firstChild.style.width = (k * 100).toFixed(0) + '%'; qb.classList.toggle('max', k >= 1); } vm.charge = k; } else vm.charge = 0;
@@ -2590,6 +2599,7 @@ function doHit(){
   if (h.object.userData.sulfur){ hitSulfur(h.object.userData.sulfur, h.point, n, kind); return true; }
   { const v = z === 0 ? veinNear(h.object, h.point) : h.object.userData.vein; if (v){ hitVein(v, h.point, n, toolStat(kind).vein); return true; } }
   if (isCave(z) && h.object.userData.cell){ SFX.pickHit(false); sparks(h.point, 3); chips(h.point, 3, 0x777068, n); return true; }
+  if (h.object.userData.npc){ npcPunched(h.object.userData.npc, d, kind); return true; }
   if (h.object.userData.isMiner){ farmerHit(); SFX.ow(); minerSay(mpick(['OW! Watch it, greenhorn!', 'That\'s my FACE!', 'Do I look like ore to you?!'])); return true; }
   kind === 'shovel' ? SFX.shovelHit() : SFX.pickHit(false);
   const col = h.object.material && h.object.material.color ? h.object.material.color.getHex() : 0x888888;
@@ -3409,11 +3419,10 @@ function modelManCar(){
   mk(new THREE.CircleGeometry(.17, 14), MB(0xfff4d0), hl, 0, 0, -.16).rotation.y = Math.PI;
   mk(new THREE.BoxGeometry(.1, .32, .1), iron, hl, 0, -.26, .08);
   const lamp2 = modelLantern(true); lamp2.scale.setScalar(1.1); lamp2.position.set(-W / 2 + .1, 1.25, L / 2 - .1); g.add(lamp2);
-  // the conductor's seat: a timber perch with a backrest, bolted to the outside of the right-hand wall
-  { const st = new THREE.Group(); st.position.set(W / 2 + .3, 0, .85); g.add(st);
-    mk(new THREE.BoxGeometry(.55, .09, .55), WOOD_D, st, 0, 1.27, 0); mk(new THREE.BoxGeometry(.5, .5, .07), WOOD_D, st, 0, 1.55, .27);
-    for (const z of [-.2, .2]){ const s = mk(new THREE.BoxGeometry(.06, .62, .06), iron, st, -.12, 1.0, z); s.rotation.z = .55; mk(new THREE.BoxGeometry(.32, .05, .05), iron, st, -.15, 1.22, z); }
-    mk(new THREE.BoxGeometry(.45, .05, .25), iron, st, .05, .62, -.25); }
+  // the conductor's seat: a raised bench just inside the front wall, in the middle, so the driver looks straight down the track
+  { const st = new THREE.Group(); st.position.set(0, 0, -L / 2 + .55); g.add(st);
+    mk(new THREE.BoxGeometry(.8, .5, .45), WOOD_D, st, 0, .73, 0); mk(new THREE.BoxGeometry(.9, .09, .55), WOOD, st, 0, 1.0, 0);
+    mk(new THREE.BoxGeometry(.9, .55, .07), WOOD_D, st, 0, 1.3, .3); for (const x of [-.4, .4]) mk(new THREE.BoxGeometry(.05, .6, .05), iron, st, x, 1.25, .3); }
   // brake lever at the back
   const lever = new THREE.Group(); lever.position.set(.75, .5, 1.75); g.add(lever);
   mk(new THREE.BoxGeometry(.16, .12, .3), iron, lever, 0, .06, 0);
@@ -3425,7 +3434,7 @@ function modelManCar(){
   return g;
 }
 // ---- the cart: a flat ore wagon you stand in and drive from the brake lever
-const CART_BED = .5, CART_TOP = 1.0, CART_HX = 1.08, CART_HZ = 2.08, CART_SEAT = .85, CART_SEAT_X = 1.38, CART_SEAT_Y = 1.32;
+const CART_BED = .5, CART_TOP = 1.0, CART_HX = 1.08, CART_HZ = 2.08, CART_SEAT = -1.35, CART_SEAT_X = 0, CART_SEAT_Y = 1.02;
 const cart = { g: modelManCar(), piece: null, s: 2.4, v: 0, roll: 0, leanT: 0, strain: 0, grind: 0, hint: '', off: null, zone: 0, lastRail: null,
   M: new THREE.Matrix4(), Mi: new THREE.Matrix4(), dM: new THREE.Matrix4(), dyaw: 0, fr: { pos: new V3(), T: new V3(), R: new V3(), U: new V3(), rate: 0 }, clackD: 0, bumpT: 0 };
 scene.add(cart.g);
@@ -3585,6 +3594,22 @@ function veinHint(){
   if (h && h.object.userData.vein){ veinTold = true; toast('<b>Ore in the rock!</b> Swing your pickaxe (or use the drill) on the glint to break chunks off.'); }
 }
 setInterval(veinHint, 500);
+function npcSay(n, t){ const p = new V3(); n.g.getWorldPosition(p); floatText(t, p.add(new V3(0, 2.1, 0)), '', 1.8); }
+function npcPunched(n, d, kind){
+  n.hits++; n.lean = 1; const push = d.clone().setY(0).normalize().multiplyScalar(kind === 'hand' ? .35 : .6);
+  const inv = new THREE.Matrix4().copy(n.b.g.matrixWorld).invert(), q = new THREE.Quaternion().setFromRotationMatrix(inv); push.applyQuaternion(q); n.off.add(push).clampLength(0, 1.2);
+  SFX.thunk && SFX.thunk(); SFX.ow && SFX.ow(); player.shake = Math.max(player.shake, .12);
+  if (n.rig && n.rig.acts.Punch) {}
+  const lines = n.hits % 10 === 0 ? ["Alright, alright! You win!"] : ["Ow!", "Hey!", "Not the face!", "I ain't fightin' ya, pardner.", "What'd I do?!", "Easy now!", "Ow, my hat!"];
+  if (n.sayT <= 0 || n.hits % 10 === 0){ npcSay(n, mpick(lines)); n.sayT = .9; }
+}
+function updateNPCs(dt){
+  for (const n of (window.__NPCS || [])){
+    n.sayT -= dt; n.lean = Math.max(0, n.lean - dt * 3); n.off.multiplyScalar(Math.max(0, 1 - dt * .6));
+    n.g.position.copy(n.home).add(n.off); n.g.rotation.x = -Math.sin(n.lean * Math.PI) * .25;
+    if (n.rig) n.rig.mixer.update(dt);
+  }
+}
 function updateCart(dt){
   cart.bumpT -= dt;
   player.tumble = Math.max(0, (player.tumble || 0) - dt * .9);
@@ -4128,6 +4153,61 @@ const saloon = building({ x: 417, z: fN, rot: NORTH, w: 14, d: 12, h: 6.4, fh: 8
   for (const [x, z] of [[-5, 7.8], [.8, 7.8], [5.2, 2.2]]) spittoon(b, x, z);
   painting(b.g, -6.88, 2.5, 6, Math.PI / 2, 0, 1.2, .8); painting(b.g, 6.88, 2.4, 9.2, -Math.PI / 2, 1);
   b.doors = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * .95, .3 + 1.05, -.02); b.g.add(p); const d = mk(new THREE.BoxGeometry(.9, 1.1, .05), M(0x7a5232), p, -s * .45, 0, 0); d.castShadow = true; return { p, s }; });
+}
+// ---- THE SALOON, done up properly: shelves of bottles behind the bar, stools, a brass rail, tables and chairs, cards and chips,
+// kegs, posters, spittoons, a stage lamp or two
+{
+  const b = saloon, P = (geo, mat, x, y, z, ry = 0) => propKeep(b, geo, mat, x, y, z, ry), wood = texMat(0x6b4627, 'deck'), dark = M(0x4a2e1a), brass = MS(0xd9b54a, { metalness: .9, roughness: .3 });
+  const circ = (lx, lz, r) => { const [x, z] = b.W2(lx, lz); addCircle(x, z, r); };
+  // every bottle in the place goes into one mesh
+  const geos = [], tint = (g, hex) => { const c = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++){ a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); g.deleteAttribute('uv'); return g; };
+  const bottle = (x, y, z, hex, k = 0) => { const h = [.3, .24, .34][k % 3], r = [.045, .055, .04][k % 3]; const body = new THREE.CylinderGeometry(r, r * 1.05, h, 7).toNonIndexed(); body.translate(x, y + h / 2, z); const neck = new THREE.CylinderGeometry(.015, .022, .1, 6).toNonIndexed(); neck.translate(x, y + h + .05, z); const cork = new THREE.CylinderGeometry(.017, .017, .03, 6).toNonIndexed(); cork.translate(x, y + h + .11, z); geos.push(tint(body, hex), tint(neck, hex), tint(cork, 0xc8a070)); };
+  const glass = (x, y, z) => { const g = new THREE.CylinderGeometry(.035, .03, .09, 7).toNonIndexed(); g.translate(x, y + .045, z); geos.push(tint(g, 0xd8e8ec)); };
+  const COLS = [0x8a4a14, 0x2f6b3a, 0x5a2a12, 0xbfd8e0, 0x2a4a8a, 0x7a1a1a, 0xc8b070, 0x3a5a2a];
+  // the back bar: three shelves crammed with bottles, a long mirror over them
+  for (const [i, y] of [1.45, 1.95, 2.45].entries()){ pbox(b, 5.8, .06, .32, -2.2, y, 11.22, wood); for (let k = 0; k < 20; k++) bottle(-5 + k * .28 + (i % 2) * .1, y + .03, 11.2, COLS[(k * 3 + i * 5) % COLS.length], k + i); }
+  P(new THREE.BoxGeometry(5.4, 1.1, .04), MS(0xc9d8e0, { metalness: 1, roughness: .08 }), -2.2, 3.35, 11.84); pbox(b, 5.6, .14, .12, -2.2, 3.98, 11.8, dark); pbox(b, 5.6, .14, .12, -2.2, 2.75, 11.8, dark);
+  // the bar top: bottles, glasses, beer taps, a till, a jar of pickled eggs
+  for (let k = 0; k < 5; k++) bottle(-4.8 + k * 1.2, 1.48, 8.45 + (k % 2) * .15, COLS[k * 2 % COLS.length], k);
+  for (let k = 0; k < 9; k++) glass(-4.6 + k * .62, 1.48, 8.75);
+  for (let k = 0; k < 3; k++){ P(new THREE.CylinderGeometry(.03, .03, .4, 8), brass, -.2 + k * .22, 1.68, 8.4); P(new THREE.BoxGeometry(.05, .14, .05), M(0x111111), -.2 + k * .22, 1.95, 8.4); }
+  P(new THREE.BoxGeometry(.42, .26, .3), brass, -5, 1.62, 8.45); P(new THREE.BoxGeometry(.4, .14, .1), MS(0xb08a30, { metalness: .8 }), -5, 1.82, 8.36);
+  P(new THREE.CylinderGeometry(.11, .11, .26, 10), MS(0xdfe8e0, { roughness: .05, transparent: true, opacity: .5 }), -3.4, 1.61, 8.4); for (let k = 0; k < 4; k++) P(new THREE.SphereGeometry(.035, 6, 4), M(0xf0ece0), -3.42 + (k % 2) * .05, 1.55 + k * .04, 8.4);
+  // a brass foot rail and six stools along the front of the bar
+  P(new THREE.CylinderGeometry(.03, .03, 6, 8), brass, -2.2, .32, 8.08).rotation.z = Math.PI / 2;
+  for (let k = 0; k < 6; k++){ const x = -4.7 + k * 1; P(new THREE.CylinderGeometry(.22, .2, .07, 10), M(0x7a2a1a), x, .86, 7.55); P(new THREE.CylinderGeometry(.04, .05, .82, 6), dark, x, .45, 7.55); P(new THREE.TorusGeometry(.15, .015, 4, 10), brass, x, .3, 7.55).rotation.x = Math.PI / 2; }
+  // round tables, chairs pulled up to them, and whatever's being played or drunk on them
+  const chairAt = (x, z, ry) => { const c = new THREE.Group(); const [wx, wz] = [x, z]; c.position.set(wx, .3, wz); c.rotation.y = ry; b.g.add(c);
+    mk(new THREE.BoxGeometry(.42, .05, .42), M(0x7a5232), c, 0, .2, 0); for (const sx of [-.18, .18]) for (const sz of [-.18, .18]) mk(new THREE.BoxGeometry(.04, .46, .04), dark, c, sx, -.03, sz);
+    for (const sx of [-.18, .18]) mk(new THREE.BoxGeometry(.04, .55, .04), dark, c, sx, .48, .19); for (const y of [.42, .62]) mk(new THREE.BoxGeometry(.4, .07, .03), M(0x7a5232), c, 0, y, .19); };
+  [[-4.6, 2.6], [-1.5, 2.4], [1.7, 2.6], [-4.5, 5.6], [-1.3, 5.4], [2.1, 5.7]].forEach(([x, z], k) => {
+    P(new THREE.CylinderGeometry(.66, .66, .07, 16), M(0x8a5f36), x, 1.12, z); P(new THREE.CylinderGeometry(.08, .12, .78, 6), dark, x, .7, z); P(new THREE.CylinderGeometry(.35, .38, .06, 10), dark, x, .33, z); circ(x, z, .62);
+    for (let c = 0; c < (k % 2 ? 4 : 3); c++){ const a = c / (k % 2 ? 4 : 3) * 6.28 + k; chairAt(x + Math.cos(a) * 1.0, z + Math.sin(a) * 1.0, -a + Math.PI / 2); }
+    bottle(x + .15, 1.155, z - .1, COLS[k % COLS.length], k); glass(x - .2, 1.155, z + .15); glass(x + .25, 1.155, z + .25);
+    if (k % 3 === 1){ for (let c = 0; c < 5; c++) P(new THREE.BoxGeometry(.07, .008, .1), M(0xf4f0e6), x - .3 + c * .12, 1.16, z - .3, c * .2); for (let c = 0; c < 4; c++) P(new THREE.CylinderGeometry(.03, .03, .02 * (2 + c), 8), M([0xc83a2a, 0x2a4ac8, 0xf0f0f0, 0x2a2a2a][c]), x + .3 - c * .08, 1.16 + .01 * (2 + c), z - .28); }
+    if (k % 3 === 2){ const hat = new THREE.Group(); hat.position.set(x - .25, 1.16, z - .2); b.g.add(hat); mk(new THREE.CylinderGeometry(.2, .2, .02, 12), M(0x5a3a22), hat, 0, 0, 0); mk(new THREE.CylinderGeometry(.11, .13, .14, 10), M(0x5a3a22), hat, 0, .07, 0); }
+  });
+  // kegs and barrels by the door, a crate of empties
+  for (const [x, z, h] of [[-6.3, 1.2, .9], [-6.3, 2.2, .9], [-5.6, 1.4, .9], [-6.25, 1.7, .7]]){ const k = P(new THREE.CylinderGeometry(.36, .36, h, 12), M(0x6b4627), x, h === .7 ? 1.25 : .75, z); if (h === .7) k.rotation.z = Math.PI / 2; P(new THREE.TorusGeometry(.36, .02, 4, 14), M(0x3a3a3a), x, .55, z).rotation.x = Math.PI / 2; }
+  circ(-6, 1.7, .9); P(new THREE.BoxGeometry(.7, .4, .5), M(0x8a6038), 5.2, .5, 1.2); for (let k = 0; k < 6; k++) bottle(4.95 + (k % 3) * .2, .7, 1.05 + Math.floor(k / 3) * .25, COLS[k % COLS.length], k);
+  // spittoons, a rug, wanted posters, the piano's keys
+  for (const [x, z] of [[-5.3, 7.9], [.9, 7.9], [4.9, 3.2]]){ P(new THREE.CylinderGeometry(.14, .1, .2, 10), brass, x, .4, z); P(new THREE.TorusGeometry(.14, .02, 4, 10), brass, x, .5, z).rotation.x = Math.PI / 2; }
+  { const r = P(new THREE.PlaneGeometry(4.5, 3), new THREE.MeshLambertMaterial({ map: canvasTex(128, 96, (c, w, h) => { c.fillStyle = '#7a2a1a'; c.fillRect(0, 0, w, h); c.strokeStyle = '#d8b060'; c.lineWidth = 5; c.strokeRect(8, 8, w - 16, h - 16); c.fillStyle = '#3a1a10'; for (let i = 0; i < 6; i++) c.fillRect(20 + i * 16, 40, 8, 16); }) }), -1.3, .33, 4); r.rotation.x = -Math.PI / 2; }
+  for (const [x, z, ry, t] of [[-6.86, 3.4, Math.PI / 2, 'WANTED'], [-6.86, 6.8, Math.PI / 2, 'REWARD'], [6.86, 4.6, -Math.PI / 2, 'WANTED']]){ const m = P(new THREE.PlaneGeometry(.7, .95), new THREE.MeshLambertMaterial({ map: signTex(160, 220, [{ t, size: 34 }, { t: '$500', size: 40 }], 2) }), x, 2.3, z, ry); }
+  for (let k = 0; k < 14; k++) P(new THREE.BoxGeometry(.08, .02, .16), M(k % 2 ? 0x111111 : 0xf4f0e6), 4.95 + k * .1, 1.16, 10.42);
+  // more light: a lamp over the tables and one over the bar
+  for (const [lx, lz, i] of [[-1.5, 4, 5], [-2.4, 8.4, 4]]){ const [x, z] = b.W2(lx, lz); addLamp(new V3(x, TY + 3.4, z), [0], { i, d: 9, c: 0xffc070 }); P(new THREE.CylinderGeometry(.02, .02, 1.6, 4), M(0x2e2b29), lx, 4.6, lz); P(new THREE.ConeGeometry(.3, .25, 10, 1, true), MS(0x3a5a2a, { side: THREE.DoubleSide }), lx, 3.75, lz); P(new THREE.SphereGeometry(.08, 6, 4), MB(0xffe0a0), lx, 3.65, lz); }
+  if (geos.length) mergedMesh(geos, b.g);
+  // Dusty, propping up the bar
+  const dusty = { b, g: new THREE.Group(), home: new V3(1.7, .3, 7.7), off: new V3(), lean: 0, hits: 0, sayT: 0, rig: null };
+  dusty.g.position.copy(dusty.home); dusty.g.rotation.y = Math.PI; b.g.add(dusty.g);
+  const hb = new THREE.Mesh(new THREE.BoxGeometry(.7, 1.8, .6), new THREE.MeshBasicMaterial({ visible: false })); hb.position.y = .9; dusty.g.add(hb); hb.userData.npc = dusty; surfaceHit.push(hb);
+  hb.userData.interact = { prompt: () => dusty.hits ? `Dusty <span style="opacity:.7">(${dusty.hits} punches and counting)</span>` : "Dusty — <b>pick Hands and click to box him</b>", use: () => npcSay(dusty, mpick(["Howdy, pardner.", "Buy a fella a drink?", "They say there's bullets down in the Diggings.", "Fists up, if you're feelin' brave."])) };
+  INTER[0].push(hb); { const [x, z] = b.W2(1.7, 7.7); addCircle(x, z, .35); }
+  setTimeout(() => loadRig(MAN_RIG).then(r => { dusty.rig = r; r.o.scale.setScalar(1.78 / r.h); dusty.g.add(r.o); rigColors(r.o, { Skin: 0xd8a070, Shirt: 0xb83a2a, Hair: 0x6a4a2a, Pants: 0x2a2a34, Socks: 0x5a4a3a, Shoes: 0x2a1c14, Eyes: 0x111111 });
+    const hat = new THREE.Group(); mk(new THREE.CylinderGeometry(.27, .27, .025, 14), M(0x5a3a22), hat, 0, 0, 0); mk(new THREE.CylinderGeometry(.13, .15, .16, 12), M(0x5a3a22), hat, 0, .08, 0); hat.position.set(0, 1.74, -.02); dusty.g.add(hat);
+    rigPlay(r, 'Idle'); }), 0);
+  window.DUSTY = dusty; (window.__NPCS = window.__NPCS || []).push(dusty);
 }
 // ---- THE BANK: counter with brass bars, a vault, a ledger desk, a waiting bench
 const bank = building({ x: 430.6, z: fN, rot: NORTH, w: 10, d: 10, h: 5.2, fh: 7.2, col: 0x8f8a80, trim: 0xd8cfc0, paper: 0x3a5a4a, sign: 'BANK', signCol: '#e2d6b0', hang: 'LOANS', posts: [-4.85, -2, 2, 4.85], shutters: 0x3c4a3a });
@@ -5037,12 +5117,14 @@ Object.assign(SFX, {
 
 // ---- strip every sign (and the post it hung on)
 // ============================================================ MINING (ore veins in the cave walls: swing side to side, hit the glint, every chunk is a roll)
+ORES.bullets = { name: 'Box of Bullets', price: 32, r: .22, tier: 1, chip: 0xc89a3a, color: '#d8a640' };
+ORES.liquor = { name: 'Bottle of Whiskey', price: 48, r: .2, tier: 2, chip: 0x9a5a20, color: '#c07a30' };
 ORES.gem = { name: 'Gemstone', price: 160, r: .16, tier: 4, chip: 0xc58cff, color: '#d8a8ff' };
 ORES.fool = { ...ORES.gold };
 Object.assign(MARKET, { gem: 1, fool: 1 }); Object.assign(BANK_RATE, { gem: 1.4, fool: 1 });
 function gemMesh(){ const g = new THREE.Group(), c = mpick([0xc58cff, 0x7fe8ff, 0xff6a9a, 0xb8ffd0]); for (let i = 0; i < 4; i++){ const m = mk(new THREE.OctahedronGeometry(.07 + Math.random() * .05, 0), MS(c, { roughness: .05, metalness: .3, emissive: new THREE.Color(c).multiplyScalar(.35), transparent: true, opacity: .9 }), g, mr(-.05, .05), mr(-.03, .06), mr(-.05, .05)); m.scale.y = 1.6; m.rotation.set(mr(-.4, .4), mr(0, 6), mr(-.4, .4)); } return g; }
 // how heavy a typical chunk is, and how rare the ore (for the colour of the card)
-const ORE_KG = { coal: 1.4, copper: 1.1, iron: 1.2, steel: .9, gold: .5, sulfur: 1, gem: .25 };
+const ORE_KG = { coal: 1.4, copper: 1.1, iron: 1.2, steel: .9, gold: .5, sulfur: 1, gem: .25, bullets: 1.6, liquor: 1.3 };
 const RARITY = { coal: ['Common', '#b8b0a4'], copper: ['Common', '#b8b0a4'], sulfur: ['Uncommon', '#7fdc6a'], iron: ['Uncommon', '#7fdc6a'], steel: ['Rare', '#5ab4ff'], gem: ['Epic', '#c88aff'], gold: ['Legendary', '#ffc531'] };
 const MODS = { shiny: { name: 'Shiny', x: 2.5, col: '#9ff0ff' }, pure: { name: 'Pristine', x: 6, col: '#fff1a0' } };
 const sizeOf = q => q < .55 ? 'Tiny' : q < .9 ? 'Small' : q < 1.6 ? '' : q < 2.6 ? 'Big' : q < 3.6 ? 'Huge' : 'Colossal';
@@ -5575,6 +5657,42 @@ resetLine('camp');
   for (let i = surfaceHit.length; i--;){ let o = surfaceHit[i]; while (o.parent) o = o.parent; if (o !== scene) surfaceHit.splice(i, 1); }
 })();
 LATE.forEach(f => f());
+const LEVEL_CAVES = (() => {
+  const out = [], defs = [
+    { theme: 'west', c: { x: TOWN.x, z: TOWN.z }, lim: 52, rock: [0xb07048, 0x9a5c3a], label: 'RUSTWATER DIGGINGS' },
+    { theme: 'forest', c: { x: FOREST.x, z: FOREST.z }, lim: 48, rock: [0x6f7a5a, 0x5a654a], label: 'FERNHOLLOW HOLLOWS' },
+    { theme: 'hill', c: { x: HILL.x, z: HILL.z }, lim: 40, rock: [0x4a3e3a, 0x3a302e], label: 'CINDER ROCK DEEP' },
+    { theme: 'peak', c: { x: ICEPK.x, z: ICEPK.z }, lim: 34, rock: [0xcfdce8, 0xb4c4d4], label: 'FROSTPEAK ICE MINE' },
+  ];
+  for (const d of defs){
+    let spot = null;
+    for (const r of [26, 20, 32, 16, 36]){ if (r > d.lim - 6) continue; for (let a = 0; a < 6.28 && !spot; a += .26){
+      const x = d.c.x + Math.cos(a) * r, z = d.c.z + Math.sin(a) * r, y = terrainH(x, z);
+      if (inRiver(x, z) || Math.abs(terrainH(x + 3, z) - y) > 1 || Math.abs(terrainH(x, z + 3) - y) > 1 || Math.abs(terrainH(x - 3, z) - y) > 1 || Math.abs(terrainH(x, z - 3) - y) > 1) continue;
+      if (surfCircles.some(c => Math.hypot(x - c.x, z - c.z) < c.r + 5) || surfBoxes.some(b => b.on && Math.hypot(x - b.x, z - b.z) < b.rad + 5) || platformTop(x, z) > y + .2) continue;
+      spot = { x, z, y };
+    } if (spot) break; }
+    if (!spot) continue;
+    // the mouth faces the middle of the place
+    const yaw = Math.atan2(d.c.x - spot.x, d.c.z - spot.z), g = new THREE.Group(); g.position.set(spot.x, spot.y, spot.z); g.rotation.y = yaw; surface.add(g);
+    const r1 = M(d.rock[0]), r2 = M(d.rock[1]);
+    const hill = mk(lowpoly(new THREE.DodecahedronGeometry(1, 1), .12), r1, g, 0, .4, -2.6); hill.scale.set(4.4, 3.6, 3.4);
+    for (const [x, z, s] of [[-3.4, .2, 1.1], [3.3, -.2, 1], [-2.6, -4.4, 1.4], [2.8, -4.6, 1.2]]){ const b = mk(lowpoly(new THREE.DodecahedronGeometry(1, 0), .15), r2, g, x, s * .4, z); b.scale.set(s, s * .8, s); }
+    mk(new THREE.BoxGeometry(2.5, 2.7, 1.6), new THREE.MeshBasicMaterial({ color: 0x050403 }), g, 0, 1.35, .45);
+    for (const s of [-1, 1]) mk(new THREE.BoxGeometry(.24, 3, .26), WOOD_D, g, s * 1.35, 1.5, 1.3);
+    mk(new THREE.BoxGeometry(3.2, .28, .3), WOOD_D, g, 0, 3, 1.3);
+    const sg = new THREE.Mesh(new THREE.BoxGeometry(2.6, .5, .06), [WOOD_D, WOOD_D, WOOD_D, WOOD_D, new THREE.MeshLambertMaterial({ map: signTex(460, 100, [{ t: d.label, size: 30 }], 2) }), WOOD_D]); sg.position.set(0, 3.5, 1.36); g.add(sg);
+    const lt = modelLantern(true); lt.position.set(1.1, 2.4, 1.5); g.add(lt);
+    g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    const fx = spot.x + Math.sin(yaw) * 3.2, fz = spot.z + Math.cos(yaw) * 3.2;
+    for (const [lx, lz, rr] of [[0, -2.8, 3.6], [-3.4, .2, 1], [3.3, -.2, .9], [-1.35, 1.3, .2], [1.35, 1.3, .2]]){ const [x, z] = l2w(spot.x, spot.z, yaw, lx, lz); addCircle(x, z, rr); }
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.8, 1.2), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(0, 1.4, 1.2); g.add(hit);
+    hit.userData.interact = { prompt: () => `<b>[E]</b> Go into the ${DEEP_THEMES[d.theme].name}`, use: () => deepEnterTheme(d.theme, { x: fx, z: fz, yaw: yaw + Math.PI }) };
+    INTER[0].push(hit); surfaceHit.push(g);
+    out.push({ theme: d.theme, g, x: spot.x, z: spot.z });
+  }
+  return out;
+})();
 // ============================================================ ACROSS THE CREEK: a little bee farm, and a bear's den dug into the hillside behind it
 const beeG = new THREE.Group(); surface.add(beeG);
 const bH = (x, z) => meshH(x, z);
@@ -6024,6 +6142,22 @@ const DEEP_LAYERS = [
   { name: 'Deepslate', d: 30, hard: 2.6, col: 0x4b505e, ores: { iron: 30, steel: 32, gold: 6, gem: 3.5, sulfur: 8 } },
   { name: 'Blackstone', d: 50, hard: 3.6, col: 0x33303a, ores: { steel: 40, iron: 20, gold: 14, gem: 10 } },
 ];
+// every level has its own cave under it: the same kind of mine, coloured like the land above it.
+// Rustwater's is a western mine: instead of plain ore its walls give up boxes of bullets and bottles of whiskey
+const DEEP_THEMES = {
+  camp: { name: "Munch's Mine", cols: [0x8f8e8a, 0x7d7b84, 0x4b505e, 0x33303a], fog: 0x07090c },
+  west: { name: 'Rustwater Diggings', cols: [0xb26a40, 0x9c5632, 0x7c3f28, 0x52291c], fog: 0x140804,
+    ores: [{ bullets: 34, liquor: 26, copper: 10, coal: 8, gold: 1.2 }, { bullets: 32, liquor: 30, iron: 10, gold: 2.5, gem: .6 }, { bullets: 30, liquor: 30, steel: 8, gold: 6, gem: 2.5 }, { bullets: 28, liquor: 30, gold: 12, gem: 8 }] },
+  forest: { name: 'Fernhollow Hollows', cols: [0x7a9c56, 0x5e8446, 0x466a38, 0x2e4a28], fog: 0x050a05 },
+  hill: { name: 'Cinder Rock Deep', cols: [0x5a4a44, 0x483a36, 0x342a2c, 0x221a1c], fog: 0x100604 },
+  peak: { name: 'Frostpeak Ice Mine', cols: [0x9cd0f4, 0x7cb6e6, 0x5c94cc, 0x3c6aa0], fog: 0x0a1018 },
+};
+const DEEP_BASE_ORES = null;
+function applyDeepTheme(t){
+  const T = DEEP_THEMES[t] || DEEP_THEMES.camp; if (!applyDeepTheme.base) applyDeepTheme.base = DEEP_LAYERS.map(L => ({ ...L.ores }));
+  DEEP_LAYERS.forEach((L, i) => { L.col = T.cols[i]; L.ores = T.ores ? { ...T.ores[i] } : { ...applyDeepTheme.base[i] }; if (typeof DCOL !== 'undefined') DCOL[i].setHex(T.cols[i]); });
+  ENV_DEEP.fog.setHex(T.fog);
+}
 const deepDepth = y => DEEP.FLOOR - y;
 function deepLayerI(d){ let i = 0; while (i < DEEP_LAYERS.length - 1 && d >= DEEP_LAYERS[i + 1].d) i++; return i; }
 const deepLayer = y => DEEP_LAYERS[deepLayerI(deepDepth(y))];
@@ -6069,6 +6203,8 @@ function planCaves(rng){
   const shroom = blob('mushroom', [16, 34], [18, 28], [6.5, 4, 6]);
   blob('ice', [22, 40], [46, 54], [6, 4.5, 6.5]);
   blob('fossil', [14, 36], [26, 36], [8, 4, 6]);
+  // and plenty of nameless caverns of every size in between, so wherever you dig you're never far from breaking into one
+  for (let i = 0; i < 12; i++){ const r = 2.6 + rng() * 3.4; blob('pocket', [9, 40], [-2 + i * 3.5, 6 + i * 4], [r * (1 + rng() * .5), r * .65, r * (1 + rng() * .5)]); }
   // the river runs out of the falls' pool and away through the rock
   if (falls){
     const pts = [], fy = falls.c.y - falls.r[1] * .55 + 1.1; let a = rng() * 6.283, p = new V3(falls.c.x, fy, falls.c.z);
@@ -6111,7 +6247,7 @@ function planCaves(rng){
     list.push({ kind: 'crack', shape: 'crack', pts: [pa, m, pb], h: 4.5 + rng() * 2, w: .85 + rng() * .2, rad: 2 });
   }
   const crackOK = (pts, h) => pts.every(p => { const q = shaftAt(p.x, p.z); return Math.abs(p.x - D.CX) < 43 && Math.abs(p.z - D.CZ) < 43 && p.y > D.y0 + 4 && p.y + h < Math.min(D.top - 3, terrainH(p.x, p.z) - 6) && !(q.s > -6 && q.s < KN.len + 6 && Math.abs(q.lat) < 7 && p.y + h > D.FLOOR - 4); });
-  for (let n = 0, t = 0; n < 11 && t < 600; t++){
+  for (let n = 0, t = 0; n < 20 && t < 900; t++){
     // the first one is close by Munch's room, so it's the first thing you're likely to dig into
     const near = n === 0 && t < 120, a = rng() * 6.283, dd = near ? 8 + rng() * 2 : 8 + rng() * 30;
     const p = new V3(D.CX + Math.cos(a) * dd, near ? D.FLOOR - 5 : F + 8 - rng() * 36, D.CZ + Math.sin(a) * dd), pts = [p];
@@ -6207,7 +6343,7 @@ function deepStamp(lo, hi, fn){
   }
 }
 function buildDeep(){
-  const D = DEEP; D.seed = (state.seed || 1849) * 7919 + 104729 | 0;
+  const D = DEEP; D.theme = D.theme || 'camp'; applyDeepTheme(D.theme); D.seed = (state.seed || 1849) * 7919 + 104729 + Object.keys(DEEP_THEMES).indexOf(D.theme) * 100003 | 0;
   const rng = mulberry32(D.seed), S = D.S;
   D.F = new Float32Array(D.PX * D.PY * D.PZ); D.lock = new Uint8Array(D.PX * D.PY * D.PZ);
   D.TH = new Float32Array(D.PX * D.PZ); for (let k = 0; k < D.PZ; k++) for (let i = 0; i < D.PX; i++) D.TH[k * D.PX + i] = terrainH(D.x0 + i * S, D.z0 + k * S);
@@ -6262,7 +6398,7 @@ function seedDeposits(rng){
   const add = (x, y, z, ore, big) => { if (den(x, y, z) <= .05 || den(x, y, z) >= 5.9) return; D.deps.push({ x, y, z, ore, big: !!big, mesh: null, gone: false, rot: rng() * 6.28 }); };
   const span = (D.NX - 4) * D.S;
   for (let y = D.top - 2; y > D.y0 + 2; y -= 1){
-    const L = DEEP_LAYERS[deepLayerI(D.FLOOR - y)], veins = span * span / 300;
+    const L = DEEP_LAYERS[deepLayerI(D.FLOOR - y)], veins = span * span / 60;
     for (let v = 0; v < veins; v++){
       let x = D.x0 + 2 + rng() * span, yy = y - rng(), z = D.z0 + 2 + rng() * span;
       const ore = pickW(richer(L.ores, x, z)), n = 1 + Math.floor(rng() * (ore === 'gold' || ore === 'gem' ? 2 : 4));
@@ -6309,8 +6445,9 @@ function deepColor(x, y, z, out){
   const i = deepLayerI(d), nx = DEEP_LAYERS[i + 1];
   out.copy(DCOL[i]); if (nx){ const t = smooth(nx.d - 2.5, nx.d, d); if (t > 0) out.lerp(DCOL[i + 1], t); }
   const n = dNoise(x * .16 + 7, y * .16, z * .16), n2 = dNoise(x * .13, y * .13 + 3, z * .13);
-  if (n > .64) out.lerp(i < 2 ? PATCH.dirt : PATCH.tuff, smooth(.64, .74, n) * .8);
-  else if (n2 > .68) out.lerp(i < 2 ? PATCH.granite : PATCH.gravel, smooth(.68, .78, n2) * .65);
+  const plain = !DEEP.theme || DEEP.theme === 'camp' || DEEP.theme === 'west';
+  if (n > .64 && plain) out.lerp(i < 2 ? PATCH.dirt : PATCH.tuff, smooth(.64, .74, n) * .8);
+  else if (n2 > .68 && plain) out.lerp(i < 2 ? PATCH.granite : PATCH.gravel, smooth(.68, .78, n2) * .65);
   const h = dHash(Math.floor(x * 3), Math.floor(y * 3), Math.floor(z * 3)), h2 = dHash(Math.floor(z * 3), Math.floor(x * 3), Math.floor(y * 3));
   let glow = 0, near = null, nd = 9;
   for (const f of DEEP.tints || []){ const dd = featNear(f, x, y, z); if (dd < 2.6){ const t = 1 - smooth(0, 2.6, dd); out.lerp(_dc2.setHex(f.tint), t * .8); if (dd < nd){ nd = dd; near = f; } } }
@@ -6438,8 +6575,18 @@ function deepOreRay(o, d, far){
   return best ? { dp: best, t: bt } : null;
 }
 // ---------------------------------------------------------------- ore popping out
+function westSpill(p, kind){
+  // bullets pour out of a seam in the wall (your guns fill up), or whiskey gushes out and a couple of bottles tumble down
+  const n = kind === 'bullets' ? 26 : 22, mat = kind === 'bullets' ? MS(0xd8a640, { metalness: .9, roughness: .3 }) : MS(0xb0621c, { roughness: .15, emissive: 0x2a1000 });
+  for (let i = 0; i < n; i++) spawnPart(kind === 'bullets' ? PGEO.ember : PGEO.drop, mat, p.clone(), new V3(mr(-1.2, 1.2), mr(-.5, 2.2), mr(-1.2, 1.2)), mr(.6, 1.3), { g: 12, parent: deepG });
+  if (kind === 'bullets'){ let got = 0; for (const k in GUNS) if (state.owned[k] || k === 'pistol'){ const add = GUNS[k].mag * 2; state.ammo[k] = (state.ammo[k] || 0) + add; got += add; } SFX.reload && SFX.reload(); floatText(`+${got} rounds`, p.clone().add(new V3(0, .4, 0)), 'lode', 1.4); updateHUD(); }
+  else { SFX.glass && SFX.glass(); }
+  const c = rollChunk(kind, false), to = player.pos.clone().sub(p).setY(0).normalize();
+  for (let i = 0; i < (kind === 'bullets' ? 1 : 2); i++){ const b = spawnOre(kind, 6, p.clone(), new V3(to.x * mr(1, 2.5) + mr(-.6, .6), mr(2, 4), to.z * mr(1, 2.5) + mr(-.6, .6)), c.q); b.kg = c.kg; b.fresh = .9; }
+}
 function deepPop(dp, hit){
   if (dp.gone) return; dp.gone = true;
+  if (dp.ore === 'bullets' || dp.ore === 'liquor'){ if (dp.mesh){ deepG.remove(dp.mesh); dp.mesh = null; } westSpill(new V3(dp.x, dp.y, dp.z), dp.ore); return; }
   if (dp.mesh){ deepG.remove(dp.mesh); dp.mesh = null; }
   const crit = hit && Math.random() < .25, c = rollChunk(dp.ore, crit || dp.big), p = new V3(dp.x, dp.y, dp.z);
   if (dp.big) c.q = Math.max(c.q, mr(2.2, 4));
@@ -6514,8 +6661,9 @@ function deepPry(dp, amt){
 // every bite is a roll: a lump nobody could see can still spill out, and the longer your dry spell the better the odds
 function deepLuck(h, got){
   if (got <= .05) return;
+  if (DEEP.theme === 'west' && Math.random() < .14){ westSpill(h.p.clone().addScaledVector(h.n, .25), Math.random() < .55 ? 'bullets' : 'liquor'); return; }
   DEEP.pity += got;
-  const chance = (state.lucky ? .35 : .004) + clamp(DEEP.pity / 120, 0, 1) * .015;
+  const chance = (state.lucky ? .35 : .03) + clamp(DEEP.pity / 60, 0, 1) * .05;
   if (Math.random() < chance * Math.min(1, got)){
     const L = deepLayer(h.p.y), ore = wpickObj(L.ores), dp = { x: h.p.x + h.n.x * .2, y: h.p.y + h.n.y * .2, z: h.p.z + h.n.z * .2, ore, big: Math.random() < .1, gone: false };
     deepPop(dp, true);
@@ -6839,7 +6987,7 @@ function meshWater(n){
 function dressDeep(rng){
   const D = DEEP;
   if (D.deco) deepG.remove(D.deco);
-  D.deco = new THREE.Group(); deepG.add(D.deco); INTER[6] = [...DEEP_HITS]; D.solids = []; D.decor = []; D.torches = []; D.rivers = []; D.lavas = []; D.falls = []; D.waterPts = [];
+  D.deco = new THREE.Group(); deepG.add(D.deco); INTER[6] = D.theme === 'camp' ? [...DEEP_HITS] : DEEP_HITS.filter(o => o !== miner.g); miner.g.visible = D.theme === 'camp'; D.solids = []; D.decor = []; D.torches = []; D.rivers = []; D.lavas = []; D.falls = []; D.waterPts = [];
   const g = D.deco, M0 = D.MOUTH, R0 = D.ROOM;
   // the entrance tunnel: timbers, daylight behind you, the bucket and the way out
   for (let sa = 2.2; sa < KN.len - 3; sa += 2.6){ const p = KN.door.clone().addScaledVector(KN.f, sa), o = deepTimber(p.x, shaftFloor(sa), p.z, false, 1.35, 2.75); o.m.rotation.y = KN.rot; }
@@ -6977,12 +7125,34 @@ const DEEP_IN = { x: -10.4, z: -5.6 };
 function deepEnter(){
   if (state.carrying && state.carrying.kind === 'jukebox'){ toast("The jukebox won't fit in the tunnel."); SFX.nope(); return; }
   transition(() => {
+    if (DEEP.theme && DEEP.theme !== 'camp'){ DEEP.theme = 'camp'; DEEP.built = false; DEEP.found = new Set(); }
     if (!DEEP.built) buildDeep();
     const M0 = DEEP.MOUTH; player.pos.set(M0.x, M0.y + .05, M0.z - 1.6); player.vel.set(0, 0, 0); player.yaw = 0; player.pitch = -.05; player.tn = null; player.safe = null;
     setZone(6); updateEnv(0, true);
     if (!state.gotTorches){ state.gotTorches = true; state.torches += 10; updateHUD(); setTimeout(() => toast("Munch: <b>\"Take some torches. It's dark once you're past the timbers.\"</b>"), 600); }
   });
   SFX.step('stone');
+}
+function deepEnterTheme(theme, out){
+  if (state.carrying && state.carrying.kind === 'jukebox'){ toast("The jukebox won't fit in the tunnel."); SFX.nope(); return; }
+  transition(() => {
+    if (DEEP.theme !== theme){ DEEP.theme = theme; DEEP.built = false; DEEP.found = new Set(); }
+    if (!DEEP.built) buildDeep();
+    DEEP.out = out; const p = DEEP.ROOM.clone().addScaledVector(KN.f, -3).add(new V3(0, .05, 0));
+    player.pos.copy(p); player.vel.set(0, 0, 0); player.yaw = Math.atan2(-KN.f.x, -KN.f.z); player.pitch = -.05; player.tn = null; player.safe = null;
+    setZone(6); updateEnv(0, true); toast(`<b>${DEEP_THEMES[theme].name}</b>` + (theme === 'west' ? ' · break the walls for boxes of bullets and bottles of whiskey' : ''));
+    if (!state.gotTorches){ state.gotTorches = true; state.torches += 10; updateHUD(); }
+  });
+  SFX.step('stone');
+}
+// walking back up the slope out of another level's cave takes you out where you came in
+function deepThemedExit(){
+  const o = DEEP.out; if (!o) return;
+  transition(() => {
+    player.pos.set(o.x, terrainH(o.x, o.z) + .05, o.z); player.vel.set(0, 0, 0); player.yaw = o.yaw; player.pitch = 0; player.safe = null; player.tn = null;
+    setZone(0); updateEnv(0, true);
+    DEEP.theme = 'camp'; DEEP.built = false; DEEP.found = new Set(); DEEP.out = null;
+  });
 }
 function deepExit(){
   transition(() => {
@@ -7158,6 +7328,7 @@ function deepSparkle(p, col){
 }
 function updateDeep(dt){
   const D = DEEP, inD = state.zone === 6;
+  if (inD && D.theme && D.theme !== 'camp' && D.out && !state.transit){ const a = shaftAt(player.pos.x, player.pos.z); if (a.s < KN.flat + 2.5 && Math.abs(a.lat) < 3.5 && player.pos.y > KN.door.y - 4){ deepThemedExit(); return; } }
   if (!D.built && started) buildDeep();
   const nearDoor = D.nearDoor = Math.hypot(player.pos.x - KN.door.x, player.pos.z - KN.door.z) < 30 && player.pos.y > KN.door.y - 14;
   if (D.built){ if (state.zone === 6) surface.visible = nearDoor; else if (state.zone === 0){ deepG.visible = nearDoor; if (nearDoor) for (const c of D.chunks) if (c.mesh) c.mesh.visible = c.mesh.geometry.boundingSphere.center.distanceTo(player.pos) < 80; } }
@@ -7202,7 +7373,7 @@ function updateDeep(dt){
   if (d > D.best + .5){ const li = deepLayerI(d), was = deepLayerI(D.best); D.best = d; if (li > was){ toast(`<b>${DEEP_LAYERS[li].name}</b>: harder rock, richer ore.`); SFX.reveal(); } }
   deepHT -= dt;
   if (deepHT <= 0){ deepHT = .25; D.feats.forEach((f, i) => { if (f.name && !D.found.has(i) && inFeat(f, P.pos)) discover(i); }); deepHints(); }
-  const mh = $('minehud'); mh.style.display = 'block'; mh.innerHTML = `<b>Munch's Mine</b> · ${d > .5 ? (d | 0) + ' m down' : 'entrance level'} · caves found <b>${D.found.size}/${D.feats.filter(f => f.name).length}</b>`;
+  const mh = $('minehud'); mh.style.display = 'block'; mh.innerHTML = `<b>${(DEEP_THEMES[D.theme] || DEEP_THEMES.camp).name}</b> · ${d > .5 ? (d | 0) + ' m down' : 'entrance level'} · caves found <b>${D.found.size}/${D.feats.filter(f => f.name).length}</b>`;
   // x-ray: buried ore within reach, and the hidden caves, show through the rock
   if (state.xray){
     deepXT -= dt;
@@ -7706,7 +7877,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '205914e6b44b8c109471a259' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '26bf6c63214a41633e652dc4' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }
@@ -8019,7 +8190,7 @@ function step(now){
   if (state.drillOn){ state.drillT -= dt; if (state.drillT <= 0){ state.drillT = .1; doDrill(); } }
   state.jackOn = live && !state.riding && mouseDown && locked && state.tool === 'jack' && !state.carrying && !player.swim && state.switchT <= 0;
   if (state.jackOn){ state.jackT -= dt; if (state.jackT <= 0){ state.jackT = .065; doDrill(true); } }
-  updatePan(dt); if (started){ updateDynamite(dt); updateGuns(dt, time); updateMining(dt); updateDeep(dt); if (live){ updateBosses(dt); updateWaves(dt); updateHoney(dt); } }
+  updatePan(dt); if (started){ updateDynamite(dt); updateGuns(dt, time); updateMining(dt); updateDeep(dt); updateNPCs(dt); if (live){ updateBosses(dt); updateWaves(dt); updateHoney(dt); } }
   tickLava(time); updateLavaFx(dt, camera.position, state.zone); if (state.zone === 0) updateCampfires(dt, time);
   // physics
   const sub = 3; for (let s = 0; s < sub; s++) for (let i = bodies.length - 1; i >= 0; i--){ const b = bodies[i]; if (b && b.zone === state.zone || (b && !b.asleep && b.zone === 0)) stepBody(b, dt / sub); }

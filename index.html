@@ -2798,7 +2798,7 @@ function cavMouth(c, m, near){
   for (const pc of near) for (let i = 0; i <= pc.n; i += 2){
     const P = pc.P[i], dx = m.x - P.x, dy = m.y - P.y, dz = m.z - P.z; if (dx * dx + dy * dy + dz * dz > 420) continue;
     const T = pc.T[i], R = pc.R[i], U = pc.U[i], a = dx * T.x + dy * T.y + dz * T.z, l = dx * R.x + dy * R.y + dz * R.z, u = dx * U.x + dy * U.y + dz * U.z;
-    if (Math.abs(a) < 2.6 && Math.abs(l) < TUBE_HW + .7 && u > -1.6 && u < TUBE_ROOF + .9){ const kk = cavK(c, P.x, P.y, P.z); if (kk > .92 && kk < 1.2){ const A = pc.P[Math.max(0, i - 8)], B = pc.P[Math.min(pc.n, i + 8)]; if ((cavK(c, A.x, A.y, A.z) - 1) * (cavK(c, B.x, B.y, B.z) - 1) < 0) return true; } }
+    if (Math.abs(a) < 2.6 && Math.abs(l) < TUBE_HW + .7 && u > -1.6 && u < TUBE_ROOF - .4){ const kk = cavK(c, P.x, P.y, P.z); if (kk > .92 && kk < 1.2){ const A = pc.P[Math.max(0, i - 8)], B = pc.P[Math.min(pc.n, i + 8)]; if ((cavK(c, A.x, A.y, A.z) - 1) * (cavK(c, B.x, B.y, B.z) - 1) < 0) return true; } }
   }
   return false;
 }
@@ -2868,11 +2868,11 @@ function cavAt(line, p){ for (const c of line.cavs) if (inCav(c, p, .93)) return
 const _iq = new V3(), _ir = new V3();
 function intrudes(a, b, c, d, pc){
   const m = _iq.copy(a).add(b).add(c).add(d).multiplyScalar(.25), ix = Math.floor(m.x / MH), iz = Math.floor(m.z / MH);
-  if (pc.line && pc.line.cavs.some(cv => inCav(cv, m, .93))) return true;
+  if (pc.line && pc.line.cavs.some(cv => inCav(cv, m, .86))) return true;
   for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++){
     const arr = mine.hash.get((ix + x) * 100003 + iz + z); if (!arr) continue;
     for (const e of arr){
-      if (e.pc === pc || e.pc.line !== pc.line || !e.pc.tubeM || (pc.prev && e.pc.prev === pc.prev && e.i * e.pc.ds < 12)) continue; const P = e.pc.P[e.i]; _ir.subVectors(m, P); if (_ir.lengthSq() > 64) continue;
+      if (e.pc === pc || e.pc.line !== pc.line || !e.pc.tubeM || e.pc === pc.prev || e.pc.prev === pc || (pc.prev && e.pc.prev === pc.prev && e.i * e.pc.ds < 12)) continue; const P = e.pc.P[e.i]; _ir.subVectors(m, P); if (_ir.lengthSq() > 64) continue; { const sa = e.i * e.pc.ds + _ir.dot(e.pc.T[e.i]); if (sa < .4 || sa > e.pc.n * e.pc.ds - .4) continue; }
       if ((e.pc.born || 0) < (pc.born || 1e9)){ if (Math.abs(_ir.dot(e.pc.T[e.i])) > 1.6) continue; const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (up > -1.2 && Math.abs(lat) < tubeHalfAt(up) * .9 - .8) return true; _ir.subVectors(m, P); }
       for (const q of [m, a, b, c, d]){ _ir.subVectors(q, P); if (Math.abs(_ir.dot(e.pc.T[e.i])) > 1.2) continue; const lat = _ir.dot(e.pc.R[e.i]), up = _ir.dot(e.pc.U[e.i]); if (up > -1 && up < 4.2 && Math.abs(lat) < 2.8) return true; }
     }
@@ -2882,6 +2882,17 @@ function intrudes(a, b, c, d, pc){
 function tubeCollar(pos, col, ring, pc, k, dir){
   const c = pc.P[k].clone().addScaledVector(pc.U[k], 4.4), cc = new THREE.Color(), out = ring.map(p => p.clone().sub(c).multiplyScalar(pc.kind === 'loop' || pc.kind === 'helix' ? 1.3 : 2.5).add(c).addScaledVector(pc.T[k], dir * (pc.kind === 'loop' || pc.kind === 'helix' ? .7 : 2.4)));
   for (let q = 0; q < ring.length; q++){ const q1 = (q + 1) % ring.length; cc.set(q >= 8 ? pc.pal.floor : pc.pal.rock[q % 3]).multiplyScalar(.82 + Math.random() * .14); pushQuad(pos, col, ring[q], out[q], out[q1], ring[q1], cc); }
+  const tw = pc.kind === 'loop' || pc.kind === 'helix', selfNear = m => { if (!tw) return false; for (let i = 0; i <= pc.n; i += 2) if (Math.abs(i - k) > 14 && pc.P[i].distanceToSquared(m) < 64) return true; return false; };
+  // a flat rim right at the mouth, in bands, each band kept only where it stays behind the cavern wall (so it never juts into the cavern)
+  const inAnyCav = m => pc.line.cavs.some(cv => cavK(cv, m.x, m.y, m.z) < .95);
+  for (const [s0, s1] of [[1, 1.45], [1.45, 2], [2, 2.7]]){
+    const A = ring.map(p => p.clone().sub(c).multiplyScalar(s0).add(c).addScaledVector(pc.T[k], dir * .05)), B = ring.map(p => p.clone().sub(c).multiplyScalar(s1).add(c).addScaledVector(pc.T[k], dir * .05));
+    for (let q = 0; q < ring.length; q++){ const q1 = (q + 1) % ring.length, m = A[q].clone().add(B[q]).add(B[q1]).add(A[q1]).multiplyScalar(.25); if (inAnyCav(m) || intrudes(A[q], B[q], B[q1], A[q1], pc) || selfNear(m)) continue; cc.set(q >= 8 ? pc.pal.floor : pc.pal.rock[(q + 2) % 3]).multiplyScalar(.7 + Math.random() * .12); pushQuad(pos, col, A[q], B[q], B[q1], A[q1], cc); }
+  }
+  for (const [dep, sc] of tw ? [[1.6, 2.0], [3.6, 1.9]] : [[1.6, 2.7], [3.6, 2.4]]){
+    const inn = ring.map(p => p.clone().addScaledVector(pc.T[k], -dir * dep)), back = ring.map(p => p.clone().sub(c).multiplyScalar(sc).add(c).addScaledVector(pc.T[k], -dir * dep));
+    for (let q = 0; q < ring.length; q++){ const q1 = (q + 1) % ring.length; if (intrudes(inn[q], back[q], back[q1], inn[q1], pc) || selfNear(back[q].clone().add(inn[q1]).multiplyScalar(.5))) continue; cc.set(q >= 8 ? pc.pal.floor : pc.pal.rock[(q + 1) % 3]).multiplyScalar(.6 + Math.random() * .12); pushQuad(pos, col, inn[q], back[q], back[q1], inn[q1], cc); }
+  }
 }
 function buildTube(pc){
   const pos = [], col = [], c = new THREE.Color(), pal = pc.pal, line = pc.line;
@@ -2889,13 +2900,13 @@ function buildTube(pc){
   for (let i = 0; i <= pc.n; i += 3){
     const k = Math.min(i, pc.n), p = pc.P[k], inside = line.cavs.some(cv => inCav(cv, p, .9));
     const s = k * pc.ds + pc.d0, sx = pc.squeeze ? lerp(.42, 1, smooth(0, 16, s)) : 1, sy = pc.squeeze ? lerp(.5, 1, smooth(0, 16, s)) : 1;
-    const ring = MPROF.map(([lx, ly], q) => { const wall = ly > -.5, j = wall ? 1 + .16 * (hash3(Math.round(p.x * 2), Math.round(p.y * 2) + q * 7, Math.round(p.z * 2)) - .5) : 1; return p.clone().addScaledVector(pc.R[k], lx * sx * j).addScaledVector(pc.U[k], ly * (ly > 0 ? sy : 1)); });
-    if (prev && !inside && !prevIn) for (let q = 0; q < MPROF.length; q++){
+    const ring = MPROF.map(([lx, ly], q) => { const wall = ly > -.5, j = wall ? 1 + .16 * (hash3(Math.round(p.x * 2), Math.round(p.y * 2) + q * 7, Math.round(p.z * 2)) - .5) : 1; const jn = k === 0 && pc.prev && !pc.prev.noTube && pc.prev.P[pc.prev.n].distanceToSquared(p) < .01, Rk = jn ? pc.prev.R[pc.prev.n] : pc.R[k], Uk = jn ? pc.prev.U[pc.prev.n] : pc.U[k]; return p.clone().addScaledVector(Rk, lx * sx * j).addScaledVector(Uk, ly * (ly > 0 ? sy : 1)); });
+    if (prev) for (let q = 0; q < MPROF.length; q++){
       const q1 = (q + 1) % MPROF.length, floor = q >= 8;
       c.set(floor ? pal.floor : pal.rock[(q + i) % 3]).multiplyScalar((floor ? 1 : q >= 3 && q <= 5 ? .74 : .92) * (.86 + Math.random() * .2));
       if (!floor && pal.bands && ((Math.floor(ring[q].y * 1.6) & 3) === 0)) c.set(pal.bands[q & 1]).multiplyScalar(.85 + Math.random() * .15);
       if (!floor && pal.moss && Math.random() < .25 && q !== 4) c.set(pal.moss).multiplyScalar(.8 + Math.random() * .3);
-      if (!intrudes(prev[q], ring[q], ring[q1], prev[q1], pc)) pushQuad(pos, col, prev[q], ring[q], ring[q1], prev[q1], c);
+      if ((!inside && !prevIn) || (m => line.cavs.every(cv => cavK(cv, m.x, m.y, m.z) > .99))(prev[q].clone().add(ring[q]).add(ring[q1]).add(prev[q1]).multiplyScalar(.25))) if (!intrudes(prev[q], ring[q], ring[q1], prev[q1], pc)) pushQuad(pos, col, prev[q], ring[q], ring[q1], prev[q1], c);
     }
     if (prev && inside !== prevIn) tubeCollar(pos, col, inside ? prev : ring, pc, inside ? prevK : k, inside ? 1 : -1);
     if (k === 0 && !inside) first = ring; prev = ring; prevIn = inside; prevK = k;
@@ -3007,6 +3018,7 @@ function finishPiece(pc){ if (!pc.noTube) buildTube(pc); railsFor(pc); supportsF
   pruneSets(pc);
   for (const cv of pc.line.cavs) if (cv.reshell && cv !== pc.cav && pc.P.some((q, j) => j % 3 === 0 && (k => k > .75 && k < 1.4)(cavK(cv, q.x, q.y, q.z)))) cv.reshell();
   if (pc.prev && pc.prev.cap){ pc.prev.g.remove(pc.prev.cap); pc.prev.cap.geometry.dispose(); pc.prev.cap = null; }
+  for (const q of mine.pieces) if (q.cap && (q.next || q.alt || (q.br && q.br.some(Boolean)))){ q.g.remove(q.cap); q.cap.geometry.dispose(); q.cap = null; }
   if (!pc.noTube && !pc.surface && !pc.end){ const e = pc.P[pc.n], c0 = e.clone().addScaledVector(pc.U[pc.n], 2.5), ring = MPROF.map(([lx, ly]) => e.clone().addScaledVector(pc.R[pc.n], lx * 1.15).addScaledVector(pc.U[pc.n], ly * 1.15)).map(p => p.addScaledVector(pc.T[pc.n], .6)), v = [];
     for (let q = 0; q < ring.length; q++){ const a = ring[q], b = ring[(q + 1) % ring.length]; v.push(c0.x, c0.y, c0.z, a.x, a.y, a.z, b.x, b.y, b.z); }
     const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); pc.cap = new THREE.Mesh(gg, END_CAP); pc.g.add(pc.cap); }
@@ -3658,7 +3670,7 @@ function updateCart(dt){
   cart.g.visible = cart.zone === state.zone || near < 30 || state.riding;
   const F2 = cart.fr, fw = _cv.copy(F2.T);
   cartSpot.intensity = cart.zone === 4 || cart.piece !== mine.line.app || cart.s > cart.piece.out + 6 ? 38 : 0;
-  cart.g.userData.beam.visible = cartSpot.intensity > 0;
+  cart.g.userData.beam.visible = cartSpot.intensity > 0 && !state.riding;
   cartSpot.position.copy(cart.g.position).addScaledVector(F2.U, .95).addScaledVector(fw, 2.7); cartSpot.target.position.copy(cart.g.position).addScaledVector(fw, 14).addScaledVector(F2.U, .6);
   cart.g.userData.lever.rotation.x = lerp(cart.g.userData.lever.rotation.x, drive ? (keys.KeyW ? -.55 : keys.KeyS ? .5 : 0) : .3, Math.min(1, dt * 8));
   const audible = clamp(1 - near / 40, 0, 1);
@@ -6379,6 +6391,8 @@ function buildDeep(){
       const y = D.y0 + j * S, fy = shaftFloor(a.s), o = dIdx(i, j, k); if (y > fy - 3 && y < fy + .25 && D.F[o] > 0) D.lock[o] = 1; }
     if (D.rail) for (let i = 0; i < D.rail.n; i += 3){ const p = D.rail.P[i]; lockNear(p, 1.25, p.y - 1.8, p.y - .2); } }
   seedDeposits(rng);
+  // put back whatever's been dug out of this cave before (it's saved with the game)
+  D.F0 = D.F.slice(); mineRestore(D.theme);
   if (D.chunks) for (const c of D.chunks) if (c.mesh){ deepG.remove(c.mesh); c.mesh.geometry.dispose(); }
   D.chunks = []; for (let n = 0; n < D.CNX * D.CNY * D.CNZ; n++) D.chunks.push({ mesh: null, dirty: true, deps: [] });
   for (const dp of D.deps) D.chunks[deepChunkOf(dp.x, dp.y, dp.z)].deps.push(dp);
@@ -7125,7 +7139,7 @@ const DEEP_IN = { x: -10.4, z: -5.6 };
 function deepEnter(){
   if (state.carrying && state.carrying.kind === 'jukebox'){ toast("The jukebox won't fit in the tunnel."); SFX.nope(); return; }
   transition(() => {
-    if (DEEP.theme && DEEP.theme !== 'camp'){ DEEP.theme = 'camp'; DEEP.built = false; DEEP.found = new Set(); }
+    if (DEEP.theme && DEEP.theme !== 'camp'){ mineStash(); DEEP.theme = 'camp'; DEEP.built = false; DEEP.found = new Set(); }
     if (!DEEP.built) buildDeep();
     const M0 = DEEP.MOUTH; player.pos.set(M0.x, M0.y + .05, M0.z - 1.6); player.vel.set(0, 0, 0); player.yaw = 0; player.pitch = -.05; player.tn = null; player.safe = null;
     setZone(6); updateEnv(0, true);
@@ -7133,10 +7147,30 @@ function deepEnter(){
   });
   SFX.step('stone');
 }
+// ---------------------------------------------------------------- saving the caves: only the rock that's been dug out (compared with the
+// cave as it's first made), which lumps of ore are gone, and which caves have been found. One record per level's cave
+const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 32768) s += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(s); };
+const b64d = s => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+function mineSnap(){
+  const D = DEEP; if (!D.built || !D.F0) return null;
+  const idx = [], val = []; for (let i = 0; i < D.F.length; i++) if (D.F[i] !== D.F0[i]){ idx.push(i); val.push(clamp(Math.round(D.F[i] * 20), -128, 127)); }
+  const gone = []; D.deps.forEach((dp, i) => { if (dp.gone) gone.push(i); });
+  return { n: D.F.length, i: b64e(new Uint8Array(new Uint32Array(idx).buffer)), v: b64e(new Uint8Array(new Int8Array(val).buffer)), g: b64e(new Uint8Array(new Uint32Array(gone).buffer)), f: [...D.found], best: D.best || 0 };
+}
+function mineStash(){ const D = DEEP; if (!D.built || !D.theme) return; const s = mineSnap(); if (s) (state.mineSaves = state.mineSaves || {})[D.theme] = s; }
+function mineRestore(theme){
+  const D = DEEP, s = state.mineSaves && state.mineSaves[theme]; if (!s || s.n !== D.F.length) return;
+  try {
+    const idx = new Uint32Array(b64d(s.i).buffer), val = new Int8Array(b64d(s.v).buffer), gone = new Uint32Array(b64d(s.g).buffer);
+    for (let k = 0; k < idx.length; k++) D.F[idx[k]] = val[k] / 20;
+    for (const k of gone) if (D.deps[k]) D.deps[k].gone = true;
+    D.found = new Set(s.f || []); D.best = Math.max(D.best || 0, s.best || 0);
+  } catch (e){ console.error('could not restore the cave', e); }
+}
 function deepEnterTheme(theme, out){
   if (state.carrying && state.carrying.kind === 'jukebox'){ toast("The jukebox won't fit in the tunnel."); SFX.nope(); return; }
   transition(() => {
-    if (DEEP.theme !== theme){ DEEP.theme = theme; DEEP.built = false; DEEP.found = new Set(); }
+    if (DEEP.theme !== theme){ mineStash(); DEEP.theme = theme; DEEP.built = false; DEEP.found = new Set(); }
     if (!DEEP.built) buildDeep();
     DEEP.out = out; const p = DEEP.ROOM.clone().addScaledVector(KN.f, -3).add(new V3(0, .05, 0));
     player.pos.copy(p); player.vel.set(0, 0, 0); player.yaw = Math.atan2(-KN.f.x, -KN.f.z); player.pitch = -.05; player.tn = null; player.safe = null;
@@ -7151,7 +7185,7 @@ function deepThemedExit(){
   transition(() => {
     player.pos.set(o.x, terrainH(o.x, o.z) + .05, o.z); player.vel.set(0, 0, 0); player.yaw = o.yaw; player.pitch = 0; player.safe = null; player.tn = null;
     setZone(0); updateEnv(0, true);
-    DEEP.theme = 'camp'; DEEP.built = false; DEEP.found = new Set(); DEEP.out = null;
+    mineStash(); DEEP.theme = 'camp'; DEEP.built = false; DEEP.found = new Set(); DEEP.out = null;
   });
 }
 function deepExit(){
@@ -7877,7 +7911,7 @@ function updatePeak(dt, t){
 }
 // ============================================================ FEEDBACK (press N: pick what's wrong, say a word if you like, and it's sent with a screenshot and where you were)
 const GAME_VERSION = 'r17';
-const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '26bf6c63214a41633e652dc4' };
+const FB = { want: false, shot: null, errors: [], t0: performance.now(), opts: new Set(), ctx: null, wasLocked: false, url: 'http://127.0.0.1:8792', token: '925fb1eee0350b00d507b227' };
 const FB_OPTS = ['Something broke', 'Unclear what to do', 'Too hard', 'Too easy', 'Controls feel off', 'Performance issue', 'Looks wrong', 'Love this'];
 let fbOpen = false;
 function fbErr(m){ FB.errors.push({ t: new Date().toISOString(), gameTime: +(typeof time === 'number' ? time : 0).toFixed(1), m: String(m).slice(0, 400) }); if (FB.errors.length > 15) FB.errors.shift(); }
@@ -8001,11 +8035,12 @@ setInterval(() => {
 function saveGame(quiet){
   if (!started || DEMO) return false;
   const onTop = state.zone === 0 && !state.riding && !player.tn && !state.fly, town = Math.hypot(player.pos.x - TOWN.x, player.pos.z - TOWN.z) < 200, forest = Math.hypot(player.pos.x - FOREST.x, player.pos.z - FOREST.z) < 200, hill = Math.hypot(player.pos.x - HILL.x, player.pos.z - HILL.z) < 220;
-  return LS.set('gr_save', { v: 3, dyn: state.dyn, torches: state.torches, gotTorches: state.gotTorches, deepBest: DEEP.best, deepFound: [...DEEP.found], money: state.money, owned: state.owned, lanternOn: state.lanternOn, tool: state.tool, caves: entrances.map(e => e.unlocked), where: town ? 'Rustwater' : forest ? 'Fernhollow' : hill ? 'Cinder Rock' : "Pebble Creek",
+  return LS.set('gr_save', { v: 3, dyn: state.dyn, torches: state.torches, gotTorches: state.gotTorches, deepBest: DEEP.best, deepFound: [...DEEP.found], mines: (mineStash(), state.mineSaves || {}), money: state.money, owned: state.owned, lanternOn: state.lanternOn, tool: state.tool, caves: entrances.map(e => e.unlocked), where: town ? 'Rustwater' : forest ? 'Fernhollow' : hill ? 'Cinder Rock' : "Pebble Creek",
     seed: state.seed, satchel: state.satchel, broken: caves.map(c => [...(c.broken || [])]), pos: onTop ? [player.pos.x, player.pos.y, player.pos.z, player.yaw] : null, t: Date.now() });
 }
 function applySave(d){
   if (!d) return;
+  state.mineSaves = d.mines || {}; if (DEEP.built){ DEEP.built = false; DEEP.theme = 'camp'; }
   if (d.seed && d.seed !== state.seed){ state.seed = d.seed; resetLine('camp'); }
   state.money = d.money | 0; Object.assign(state.owned, d.owned || {}); state.lanternOn = d.lanternOn ?? true; state.tool = d.tool === 'pan' || d.tool === 'pick' || d.tool === 'drill' || d.tool === 'jack' || GUNS[d.tool] ? d.tool : 'hand'; state.satchel = (d.satchel || []).filter(o => ORES[o.ore]); if (d.v !== 3){ d.broken = []; d.pos = null; } state.dyn = clamp(d.dyn | 0, 0, 100); state.torches = d.torches | 0; state.gotTorches = !!d.gotTorches; DEEP.best = d.deepBest || 0; DEEP.found = new Set(d.deepFound || []); if (!['hand', 'pick', 'pan', 'drill', 'jack'].includes(state.tool) && !GUNS[state.tool]) state.tool = 'hand'; if (d.broken && d.broken.length < 4) d.broken = [];
   for (const slot of board.slots) if (slot.it.unique && state.owned[slot.it.id]) markOwned(slot);
